@@ -1,410 +1,929 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Xiaomi Mexico — Organizational Structure</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Competitive Price Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --bg:        #F3F1EC;
-  --surface:   #FDFCF9;
-  --border:    #E2DFD6;
-  --text:      #1C1B18;
-  --muted:     #68675F;
-  --subtle:    #9A9892;
-  --line:      #C6C3B6;
-  --purple-bg:#EEEDFE; --purple-bd:#534AB7; --purple-dk:#3C3489;
-  --teal-bg:  #E1F5EE; --teal-bd:  #0F6E56; --teal-dk:  #085041;
-  --blue-bg:  #E6F1FB; --blue-bd:  #185FA5; --blue-dk:  #0C447C;
-  --coral-bg: #FAECE7; --coral-bd: #993C1D; --coral-dk: #712B13;
-  --green-bg: #EAF3DE; --green-bd: #3B6D11; --green-dk: #27500A;
-  --gray-bg:  #F1EFE8; --gray-bd:  #6E6C66; --gray-dk:  #3D3C39;
-}
-
-html, body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; -webkit-font-smoothing:antialiased; }
-
-/* ── HEADER ───────────────────────────────────────────── */
-header {
-  position:sticky; top:0; z-index:200;
-  background:var(--surface); border-bottom:1px solid var(--border);
-  display:flex; align-items:center; justify-content:space-between;
-  padding:16px 40px; gap:20px; flex-wrap:wrap;
-}
-.htitle h1 { font-size:16px; font-weight:600; letter-spacing:-0.2px; }
-.htitle h1 em { font-style:normal; font-weight:400; color:var(--muted); }
-.htitle p { font-family:'DM Mono',monospace; font-size:10.5px; color:var(--subtle); letter-spacing:0.3px; margin-top:3px; }
-.hmeta { display:flex; align-items:center; gap:22px; flex-wrap:wrap; }
-.leg  { display:flex; align-items:center; gap:14px; }
-.legi { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); }
-.lsw  { width:20px; height:11px; border-radius:3px; border:1.5px solid var(--subtle); }
-.lsw.dash { border-style:dashed; border-color:var(--green-bd); }
-.hhint { font-size:11px; color:var(--subtle); font-style:italic; }
-
-/* ── CHART AREA ───────────────────────────────────────── */
-.scroll-outer { overflow-x:auto; overflow-y:visible; padding:50px 0 0; cursor:grab; }
-.scroll-outer:active { cursor:grabbing; }
-#chart { position:relative; }
-
-/* SVG lines */
-#svg-lines { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; }
-
-/* ── ROOT NODE ────────────────────────────────────────── */
-.root-node {
-  position:absolute;
-  background:var(--surface); border:1.5px solid var(--border); border-radius:11px;
-  display:flex; align-items:center; justify-content:center; flex-direction:column;
-  box-shadow:0 2px 10px rgba(0,0,0,0.07);
-}
-.root-node .rn { font-size:13px; font-weight:600; letter-spacing:-0.2px; }
-.root-node .rs { font-family:'DM Mono',monospace; font-size:9.5px; color:var(--subtle); margin-top:4px; letter-spacing:0.2px; }
-
-/* ── CATEGORY NODE ────────────────────────────────────── */
-.cat-node {
-  position:absolute; border-radius:10px; border:1.5px solid;
-  overflow:hidden; cursor:pointer; user-select:none;
-  transition:transform 0.13s ease, box-shadow 0.13s ease;
-}
-.cat-node:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,0.11); }
-.cat-node.open  { box-shadow:0 4px 16px rgba(0,0,0,0.12); }
-.cat-bar  { height:4px; width:100%; }
-.cat-body { padding:8px 12px 10px; }
-.cat-name { font-size:12px; font-weight:600; letter-spacing:-0.1px; line-height:1.3; display:flex; align-items:center; gap:5px; }
-.cat-sub  { font-size:9.5px; margin-top:2px; opacity:0.75; line-height:1.3; }
-.cat-arr  { font-size:9px; transition:transform 0.26s cubic-bezier(0.34,1.2,0.64,1); display:inline-block; }
-.cat-node.open .cat-arr { transform:rotate(180deg); }
-
-/* ── CONNECTOR cat → panel ────────────────────────────── */
-.cat-conn {
-  position:absolute; width:2px; border-radius:1px;
-  transform:scaleY(0); transform-origin:top; opacity:0;
-  transition:transform 0.26s cubic-bezier(0.34,1.1,0.64,1), opacity 0.2s;
-}
-.cat-conn.open { transform:scaleY(1); opacity:1; }
-
-/* ── DEPT PANEL ───────────────────────────────────────── */
-.panel-wrap {
-  position:absolute;
-  background:var(--surface); border-radius:12px; border:1.5px solid var(--border);
-  box-shadow:0 10px 36px rgba(0,0,0,0.11), 0 2px 6px rgba(0,0,0,0.05);
-  overflow:hidden; pointer-events:none; opacity:0;
-  transition:opacity 0.22s ease;
-}
-.panel-wrap.open { pointer-events:auto; opacity:1; }
-
-/* arrow pointer */
-.panel-wrap::before {
-  content:'';
-  position:absolute; top:-8px;
-  width:14px; height:8px;
-  clip-path:polygon(50% 0%,0% 100%,100% 100%);
-  background:var(--surface);
-  left:var(--tri);
-  transform:translateX(-50%);
-  z-index:1;
-  filter:drop-shadow(0 -2px 2px rgba(0,0,0,0.06));
-}
-
-/* smooth height via grid trick */
-.panel-clip {
-  display:grid; grid-template-rows:0fr;
-  transition:grid-template-rows 0.28s cubic-bezier(0.34,1.1,0.64,1);
-}
-.panel-wrap.open .panel-clip { grid-template-rows:1fr; }
-.panel-inner { overflow:hidden; min-height:0; }
-
-/* dept card grid */
-.panel-grid { display:grid; gap:10px; padding:14px; }
-
-/* ── DEPT CARD ────────────────────────────────────────── */
-.dept-card {
-  border-radius:9px; border:1.5px solid; overflow:hidden; cursor:pointer;
-  transition:transform 0.12s ease, box-shadow 0.12s ease;
-}
-.dept-card:hover { transform:translateY(-2px); box-shadow:0 6px 18px rgba(0,0,0,0.13); z-index:5; }
-.dept-card.inferred { border-style:dashed; }
-.dc-inner  { padding:9px 11px 10px; }
-.dc-cn     { font-size:12px; font-weight:600; letter-spacing:-0.1px; line-height:1.3; }
-.dc-en     { font-size:10px; margin-top:3px; opacity:0.8; line-height:1.3; }
-.dc-inf    { font-family:'DM Mono',monospace; font-size:9px; margin-top:4px; opacity:0.55; }
-
-/* ── TOOLTIP ──────────────────────────────────────────── */
-.tooltip {
-  position:fixed; z-index:500; width:296px;
-  background:var(--surface); border-radius:12px; border:1.5px solid var(--border);
-  box-shadow:0 14px 44px rgba(0,0,0,0.14); pointer-events:none; overflow:hidden;
-  opacity:0; transform:translateY(6px);
-  transition:opacity 0.15s ease, transform 0.15s ease;
-}
-.tooltip.vis { opacity:1; transform:translateY(0); }
-.tip-head  { padding:12px 15px 11px; border-bottom:1px solid var(--border); }
-.tip-cn    { font-size:13px; font-weight:600; letter-spacing:-0.1px; }
-.tip-en    { font-size:10.5px; margin-top:2px; opacity:0.7; }
-.tip-body  { padding:8px 0 4px; }
-.tip-row   { display:flex; align-items:flex-start; gap:9px; padding:5px 15px; }
-.tip-row:hover { background:rgba(0,0,0,0.02); }
-.tip-bull  { font-size:13px; font-weight:700; flex-shrink:0; margin-top:-1px; line-height:1.55; }
-.tip-text  { font-size:11px; line-height:1.6; color:var(--text); }
-
-/* ── FOOTER HINT ──────────────────────────────────────── */
-.foot { text-align:center; font-size:11px; color:var(--subtle); font-style:italic; padding:18px 0 28px; }
+:root{--bg:#0a0e14;--s0:#0d1017;--s1:#14191f;--s2:#1c2330;--border:#1e2a3a;--border-sub:rgba(30,42,58,.65);--accent:#ff8f40;--accent-dim:rgba(255,143,64,.15);--text:#bfbdb6;--text2:#8a9199;--muted:#626a73;--poco:#ff8f40;--samsung:#59c2ff;--motorola:#39bae6;--honor:#f07178;--oppo:#8cc265;--pos:#aad94c;--neg:#f07178;--r-sm:10px;--r-md:20px;--r-lg:32px;--sh-sm:0 2px 12px rgba(0,0,0,.35),0 1px 3px rgba(0,0,0,.25);--sh-md:0 6px 24px rgba(0,0,0,.42),0 2px 6px rgba(0,0,0,.22)}
+body.light{--bg:#f8f9fa;--s0:#fcfcfc;--s1:#f0f2f5;--s2:#e6e9ef;--border:#d0d6e0;--border-sub:rgba(180,190,210,.5);--accent:#fa8532;--accent-dim:rgba(250,133,50,.13);--text:#0b0e14;--text2:#3d4554;--muted:#6c7989;--pos:#4caf50;--neg:#e5534b;--sh-sm:0 2px 10px rgba(40,20,8,.1),0 1px 3px rgba(40,20,8,.07);--sh-md:0 6px 20px rgba(40,20,8,.12),0 2px 5px rgba(40,20,8,.07)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans','PingFang SC',system-ui,sans-serif;font-size:14px;line-height:1.5;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s}
+code,.mono{font-family:'DM Mono','Courier New',monospace}
+header{background:var(--s0);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:var(--sh-md)}
+.header-inner{max-width:1400px;margin:0 auto;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:54px;gap:16px}
+.header-logo{font-size:1rem;font-weight:700;letter-spacing:.02em;color:var(--poco)}
+.header-title{font-size:.85rem;font-weight:400;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.btn-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;border-radius:var(--r-lg);border:1px solid var(--border);background:transparent;color:var(--text2);font-size:.73rem;font-weight:500;transition:all .15s;cursor:pointer;font-family:inherit}
+.btn-pill:hover{border-color:var(--accent);color:var(--accent)}
+.btn-export:hover{border-color:var(--pos);color:var(--pos)}
+.tab-bar-wrap{background:var(--s0);border-bottom:1px solid var(--border)}
+.tab-bar-inner{max-width:1400px;margin:0 auto;padding:10px 32px}
+.tab-group{display:inline-flex;background:var(--s1);border-radius:var(--r-lg);padding:4px;gap:2px}
+.tab-btn{padding:7px 18px;border-radius:var(--r-lg);border:none;background:transparent;color:var(--muted);font-size:.78rem;font-weight:500;transition:all .18s;white-space:nowrap;font-family:inherit;cursor:pointer}
+.tab-btn.active{background:var(--s0);color:var(--text);font-weight:600;box-shadow:var(--sh-sm)}
+.tab-btn:hover:not(.active){color:var(--text2)}
+.filter-group{display:flex;align-items:center;gap:8px}
+.filter-label{font-family:'DM Mono',monospace;font-size:.6rem;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap}
+.filter-divider{width:1px;height:20px;background:var(--border);flex-shrink:0}
+.chip-row{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:5px 13px;border-radius:var(--r-lg);border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.72rem;font-weight:400;transition:all .15s;white-space:nowrap;cursor:pointer;font-family:inherit}
+.chip.active{border-color:var(--accent);background:var(--accent-dim);color:var(--text);font-weight:600}
+.chip .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.week-select{background:var(--s1);color:var(--text);border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 28px 4px 8px;font-size:.72rem;font-family:'DM Mono',monospace;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a9199'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;transition:border-color .15s}
+.week-select:focus{border-color:var(--accent)}
+.week-sep{font-size:.72rem;color:var(--muted);font-family:'DM Mono',monospace}
+main{max-width:1400px;margin:0 auto;padding:26px 32px}
+.tab-pane{display:none}.tab-pane.active{display:block}
+/* ── Recent tab toolbar ── */
+.recent-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px}
+.recent-left{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+/* ── Matrix table ── */
+.matrix-caption{font-size:.72rem;color:var(--text2);display:flex;flex-wrap:wrap;align-items:center;gap:6px;line-height:1.5}
+.matrix-caption strong{color:var(--text);font-weight:600}
+.caption-date{font-family:'DM Mono',monospace;font-size:.67rem;background:var(--s1);padding:2px 8px;border-radius:6px;color:var(--text2)}
+.matrix-wrap{overflow-x:auto;border-radius:var(--r-md);box-shadow:var(--sh-md);margin-top:12px;margin-bottom:20px;background:var(--s0)}
+.matrix-table{width:100%;border-collapse:collapse;table-layout:fixed}
+.matrix-table thead th{background:var(--s1);padding:7px 10px;font-family:'DM Mono',monospace;font-size:.63rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);border-bottom:1px solid var(--border);white-space:nowrap;text-align:center}
+.matrix-corner{text-align:center!important}
+.matrix-band-label{padding:6px 10px;background:var(--s1);border-right:1px solid var(--border);font-family:'DM Mono',monospace;font-weight:600;white-space:nowrap;vertical-align:middle;font-size:.72rem;color:var(--text2);text-align:center}
+.matrix-cell{padding:3px 7px;border:1px solid var(--border-sub);vertical-align:top;transition:background .12s}
+.matrix-cell:hover{background:var(--s2)}
+.matrix-empty{color:var(--muted);text-align:center;vertical-align:middle;opacity:.4;font-size:1rem}
+.matrix-poco{background:rgba(255,143,64,.06)!important;border-left:2px solid rgba(255,143,64,.35)!important}
+.matrix-cheap{background:rgba(240,113,120,.07)!important;border-left:2px solid rgba(240,113,120,.4)!important}
+/* Compact cell layout */
+.sku-row{display:flex;align-items:baseline;justify-content:space-between;gap:4px;margin-bottom:0}
+.sku-left{display:flex;align-items:baseline;gap:3px;min-width:0;flex:1}
+.sku-right{display:flex;flex-direction:column;gap:2px;flex-shrink:0;align-items:flex-end}
+.matrix-model{font-weight:600;font-size:.72rem;color:var(--text);white-space:nowrap;line-height:1.3}
+.sku-cfg{font-family:'DM Mono',monospace;font-size:.62rem;color:var(--text2);white-space:nowrap}
+.link-icon{color:var(--muted);font-size:.72rem;text-decoration:none;transition:color .12s;line-height:1;flex-shrink:0}
+.link-icon:hover{color:var(--accent)}
+.matrix-price{font-family:'DM Mono',monospace;font-size:.78rem;font-weight:700;color:var(--text2);margin-top:0;margin-bottom:2px}
+.matrix-poco .matrix-price{color:var(--poco)}
+.matrix-price-cheap{color:var(--neg)!important}
+.sku-sep{height:1px;background:var(--border-sub);margin:3px 0}
+/* ── Snapshot header ── */
+.snapshot-header{background:var(--s0);border-radius:var(--r-md);box-shadow:var(--sh-sm);padding:14px 20px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.snap-left{display:flex;flex-direction:column;gap:3px}
+.snap-eyebrow{font-family:'DM Mono',monospace;font-size:.6rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.12em}
+.snap-week{font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.snap-week-pill{font-family:'DM Mono',monospace;font-size:.72rem;font-weight:500;background:var(--accent-dim);color:var(--accent);border:1px solid rgba(255,143,64,.3);padding:2px 10px;border-radius:var(--r-lg)}
+.snap-dates{font-family:'DM Mono',monospace;font-size:.67rem;color:var(--text2)}
+.snap-right{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.snap-legend{display:flex;align-items:center;gap:5px;font-size:.7rem;color:var(--text2)}
+.snap-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.mom-badge{display:inline-block;font-family:'DM Mono',monospace;font-size:.54rem;padding:1px 4px;border-radius:4px;white-space:nowrap;font-weight:500;line-height:1.4}
+.mom-pos{background:rgba(170,217,76,.14);color:var(--pos)}
+.mom-neg{background:rgba(240,113,120,.14);color:var(--neg)}
+.mom-flat{background:rgba(128,128,128,.1);color:var(--muted)}
+/* Segment separators */
+tbody.seg-block+tbody.seg-block td{border-top:2px solid var(--border)!important}
+/* Chart */
+.chart-card{background:var(--s0);border-radius:var(--r-md);box-shadow:var(--sh-sm);overflow:hidden}
+.chart-head{padding:14px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.chart-title{font-size:.82rem;font-weight:600;color:var(--text)}
+.chart-hint{font-family:'DM Mono',monospace;font-size:.65rem;color:var(--muted);display:flex;align-items:center;gap:8px}
+.gap-swatch{display:inline-block;width:22px;height:0;border-top:2px dashed var(--muted);vertical-align:middle}
+.swim-outer{overflow-y:auto;max-height:calc(100vh - 220px)}
+.swim-axis-row{position:sticky;top:0;background:var(--s0);z-index:10;border-bottom:1px solid var(--border)}
+.swim-axis-row svg,.swim-body svg{display:block;overflow:visible}
+#tooltip{position:fixed;pointer-events:none;z-index:1000;background:var(--s1);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 13px;box-shadow:0 4px 20px rgba(0,0,0,.35);font-size:.78rem;color:var(--text);opacity:0;transition:opacity .1s;white-space:nowrap}
+#tooltip.show{opacity:1}
+.tt-week{font-family:'DM Mono',monospace;font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.tt-row{display:flex;align-items:center;gap:7px;line-height:1.4}
+.tt-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.tt-label{font-size:.72rem;color:var(--text2)}
+.tt-price{font-family:'DM Mono',monospace;font-size:.78rem;font-weight:600;margin-left:auto;padding-left:12px}
+.empty-state{text-align:center;padding:80px 40px;color:var(--muted);font-size:.82rem}
+.hist-filters{display:flex;flex-wrap:wrap;align-items:center;gap:18px;padding-bottom:18px}
+/* ── Readme ── */
+.readme-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:900px){.readme-grid{grid-template-columns:1fr}}
+.readme-section{background:var(--s0);border-radius:var(--r-md);box-shadow:var(--sh-sm);padding:22px}
+.readme-full{background:var(--s0);border-radius:var(--r-md);box-shadow:var(--sh-sm);padding:22px;margin-bottom:16px}
+.readme-section h2,.readme-full h2{font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.readme-section h3,.readme-full h3{font-size:.8rem;font-weight:700;color:var(--accent);margin:14px 0 5px}
+.readme-section h3:first-of-type,.readme-full h3:first-of-type{margin-top:0}
+.readme-section p,.readme-full p,.readme-section li,.readme-full li{font-size:.8rem;color:var(--text2);line-height:1.7}
+.readme-section ul,.readme-full ul,.readme-section ol,.readme-full ol{padding-left:18px;margin:4px 0 10px}
+.readme-section li,.readme-full li{margin-bottom:3px}
+.readme-section strong,.readme-full strong{color:var(--text);font-weight:600}
+.readme-section code,.readme-full code{font-family:'DM Mono',monospace;font-size:.74rem;background:var(--s2);padding:1px 6px;border-radius:4px;color:var(--accent)}
+.readme-step{display:flex;gap:14px;margin-bottom:14px;align-items:flex-start}
+.readme-step-num{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--bg);font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center}
+.readme-step-body{flex:1}
+.readme-step-body strong{display:block;font-size:.82rem;color:var(--text);font-weight:600;margin-bottom:3px}
+.readme-step-body p{font-size:.78rem;color:var(--text2);line-height:1.65;margin:0}
+.readme-warn{background:rgba(255,180,84,.08);border:1px solid rgba(255,180,84,.25);border-radius:var(--r-sm);padding:10px 14px;margin-top:10px;font-size:.78rem;color:#ffb454;line-height:1.6}
+.readme-file-row{display:flex;gap:10px;margin-bottom:8px;align-items:baseline}
+.readme-file-name{font-family:'DM Mono',monospace;font-size:.74rem;color:var(--accent);flex-shrink:0;min-width:240px}
+.readme-file-desc{font-size:.78rem;color:var(--text2);line-height:1.55}
+.readme-lang-panel{display:none}.readme-lang-panel.active{display:block}
 </style>
 </head>
 <body>
-
 <header>
-  <div class="htitle">
-    <h1>Xiaomi Mexico <em>— Organizational Structure</em></h1>
-    <p>小米科技 · 国际业务部 · 拉美地区部 · 墨西哥</p>
-  </div>
-  <div class="hmeta">
-    <div class="leg">
-      <div class="legi"><div class="lsw"></div>Confirmed in 人员架构</div>
-      <div class="legi"><div class="lsw dash"></div>Inferred</div>
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:10px;min-width:0">
+      <span class="header-logo">Xiaomi</span>
+      <span class="header-title" data-en="Mexico &mdash; Competitive Price Tracker" data-zh="墨西哥 &mdash; 竞争价格追踪">Mexico &mdash; Competitive Price Tracker</span>
     </div>
-    <div class="hhint">Click a branch · Hover a card for responsibilities</div>
+    <div class="header-right">
+      <button class="btn-pill btn-export" onclick="exportSnapshot()" id="exportBtn" data-en="&#8659; Export" data-zh="&#8659; 导出">&#8659; Export</button>
+      <button class="btn-pill" id="langBtn" onclick="toggleLang()">&#127760; 中文</button>
+      <button class="btn-pill" id="themeBtn">&#9728;&#65039; Light</button>
+    </div>
   </div>
 </header>
-
-<div class="scroll-outer" id="scrollOuter">
-  <div id="chart"></div>
+<div class="tab-bar-wrap">
+  <div class="tab-bar-inner">
+    <div class="tab-group">
+      <button class="tab-btn active" data-tab="recent" data-en="Recent" data-zh="最新价格">Recent</button>
+      <button class="tab-btn" data-tab="historical" data-en="Historical Data" data-zh="历史数据">Historical Data</button>
+      <button class="tab-btn" data-tab="readme" data-en="Readme" data-zh="说明">Readme</button>
+    </div>
+  </div>
 </div>
-<p class="foot">Click any branch node to expand its departments</p>
-
-<div id="tooltip" class="tooltip">
-  <div id="tip-head" class="tip-head"></div>
-  <div id="tip-body" class="tip-body"></div>
-</div>
-
-<script>
-/* ── DATA ─────────────────────────────────────────────── */
-const CO = {
-  purple:{ bg:'#EEEDFE', bd:'#534AB7', t:'#3C3489' },
-  teal:  { bg:'#E1F5EE', bd:'#0F6E56', t:'#085041' },
-  blue:  { bg:'#E6F1FB', bd:'#185FA5', t:'#0C447C' },
-  coral: { bg:'#FAECE7', bd:'#993C1D', t:'#712B13' },
-  green: { bg:'#EAF3DE', bd:'#3B6D11', t:'#27500A' },
-  gray:  { bg:'#F1EFE8', bd:'#6E6C66', t:'#3D3C39' },
-};
-
-const DEPTS = {
-  aiot:   {cn:'AIoT GTM部',    en:'AIoT GTM',          n:7,    c:'purple', resp:['GTM planning for AIoT & tablet product lines','Pricing strategy & channel mix for AIoT','Launch coordination with HQ AIoT product teams','Sell-through monitoring & promotional planning','Market intelligence for AIoT segment in Mexico']},
-  mobile: {cn:'手机GTM部',     en:'Mobile GTM',        n:5,    c:'purple', resp:['GTM planning for all smartphone lines','Pricing & margin management per SKU','Commercial calendar & promotional alignment','Channel sell-in coordination across channels','Sell-through monitoring per model']},
-  open:   {cn:'公开市场销售部', en:'Open Market Sales', n:13,   c:'teal',   resp:['Key accounts: Liverpool, Walmart, Coppel, Elektra','Sell-in negotiation & shelf space allocation','Regional distributor network management','In-store promo execution & display placement','Retail sell-through & POS reporting to HQ']},
-  channel:{cn:'渠道零售部',    en:'Channel Retail',    n:11,   c:'teal',   resp:['3rd-party retail channel development','Channel partner onboarding & training','Retail pricing compliance monitoring','Channel conflict resolution','Indirect sales coverage outside CDMX']},
-  newret: {cn:'新零售部',      en:'New Retail',        n:19,   c:'teal',   resp:['Mi Home store operations across Mexico','Xiaomi-owned retail experience design','In-store staff management & training','Experiential retail & demo product management','Direct consumer touchpoint strategy']},
-  carrier:{cn:'运营商销售部',  en:'Carrier Sales',     n:4,    c:'teal',   resp:['Telcel, AT&T MX & Movistar relationships','Device bundling & subsidy negotiation','Carrier certification coordination','Carrier-exclusive launch deal structuring','Co-marketing with carrier retail channels']},
-  smgmt:  {cn:'销售管理',      en:'Sales Mgmt',        n:3,    c:'teal',   resp:['Sales KPI tracking & reporting to HQ','Incentive & commission scheme admin','Sales process governance & workflows','Cross-channel commercial calendar mgmt','Discount & pricing authority limits']},
-  mkt:    {cn:'市场部',        en:'Marketing',         n:7,    c:'blue',   resp:['Brand campaigns & media buying in Mexico','Product launch marketing coordination','Social media & content strategy','PR & influencer management','Co-marketing with key retail partners']},
-  ecom:   {cn:'电商部',        en:'E-commerce',        n:2,    c:'blue',   resp:['Mi.com MX storefront management','Amazon MX & MercadoLibre presence','Online pricing & promotional execution','Digital shelf content management','Online sell-through tracking']},
-  deliv:  {cn:'交付部',        en:'Delivery',          n:9,    c:'coral',  resp:['Inbound logistics & customs clearance','Warehouse management in Mexico','Last-mile delivery to retail partners','Returns & reverse logistics handling','Delivery KPI tracking & HQ reporting']},
-  ptech:  {cn:'产品技术部',    en:'Product & Tech',    n:3,    c:'coral',  resp:['IFETEL certification & regulatory compliance','HQ-to-market technical translation layer','Band compatibility for MX carriers','Software localization for LATAM Spanish','Product feasibility review for MX SKUs']},
-  fin:    {cn:'财务部',        en:'Finance',           n:null, c:'green',  inf:true, resp:['P&L management for Mexico BU','Budget allocation & cost control','Financial reporting to LatAm HQ','FX management (MXN/USD exposure)','AP/AR & vendor payment management']},
-  hr:     {cn:'人力资源部',    en:'HR / People',       n:null, c:'green',  inf:true, resp:['Recruitment & onboarding for Mexico','Payroll & benefits administration','Performance review coordination','Labor law compliance (LFT)','Headcount planning & org development']},
-  legal:  {cn:'法务部',        en:'Legal',             n:null, c:'green',  inf:true, resp:['Contract review & commercial agreements','Regulatory compliance (PROFECO, IFETEL)','IP protection in Mexico','Dispute resolution & litigation support','HQ legal coordination for MX entity']},
-  it:     {cn:'IT部',          en:'IT & Systems',      n:null, c:'green',  inf:true, resp:['Internal systems & ERP management','Network & device support for MX office','Data security & access control','HQ IT infrastructure coordination','Software vendor management']},
-  admin:  {cn:'行政',          en:'Admin',             n:0,    c:'green',  resp:['Office facilities management','Travel & expense administration','Vendor & supplier coordination','Government liaison & permits','Executive support & scheduling']},
-  after:  {cn:'售后服务',      en:'After-sales',       n:0,    c:'gray',   resp:['Warranty claims processing','Authorized service center network','Spare parts management','Customer complaint resolution','Product quality feedback to HQ']},
-  ff:     {cn:'FF',            en:'FF Dept',           n:0,    c:'gray',   resp:['Function unclear — 0 active headcount','Possibly centralized at LatAm level','May relate to field force or fixtures','Confirm scope with internal contacts','Could be a future planned function']},
-};
-
-const CATS = [
-  {key:'gtm',  label:'GTM',                sub:'2 depts · 12 people',       c:'purple', depts:['aiot','mobile']},
-  {key:'sales',label:'Sales & Channel',    sub:'5 depts · 50 people',       c:'teal',   depts:['open','channel','newret','carrier','smgmt']},
-  {key:'mkt',  label:'Marketing & Digital',sub:'2 depts · 9 people',        c:'blue',   depts:['mkt','ecom']},
-  {key:'ops',  label:'Operations',         sub:'2 depts · 12 people',       c:'coral',  depts:['deliv','ptech']},
-  {key:'plat', label:'Platform / Enabling',sub:'5 depts · mostly inferred', c:'green',  depts:['fin','hr','legal','it','admin']},
-  {key:'cs',   label:'Customer Support',   sub:'2 depts · 0 active',        c:'gray',   depts:['after','ff']},
-];
-
-/* ── LAYOUT ───────────────────────────────────────────── */
-const NW=172, NH=74, GAP=28, PAD=80, VG=80;
-const RW=300, RH=56;
-const TW = 6*NW + 5*GAP + 2*PAD;  // total width = 1472
-const RCX = TW / 2;               // root center x = 736
-const RY  = PAD;                   // root top = 80
-const CY  = RY + RH + VG;         // cat top = 216
-const CB  = CY + NH;               // cat bottom = 290
-const CH  = 24;                    // connector height
-const PY  = CB + CH;               // panel top = 314
-const CHART_H = PY + 290;         // canvas height = 604
-
-// Category X positions
-const catX  = i => PAD + i*(NW+GAP);
-const catCX = i => catX(i) + NW/2;
-
-// Panel layout: dep card dims
-const DW=134, DG=10, DP=14;
-function panelCols(cat) { return cat.depts.length <= 2 ? 2 : 3; }
-function panelW(cat)    { const c=panelCols(cat); return c*DW+(c-1)*DG+2*DP; }
-function panelLeft(cat, i) {
-  const cx=catCX(i), pw=panelW(cat);
-  return Math.max(PAD, Math.min(cx-pw/2, TW-PAD-pw));
-}
-
-/* ── BUILD ────────────────────────────────────────────── */
-const chart = document.getElementById('chart');
-chart.style.cssText = `width:${TW}px;height:${CHART_H}px;position:relative;`;
-
-// SVG for root→cat lines (permanent)
-const NS='http://www.w3.org/2000/svg';
-const svg=document.createElementNS(NS,'svg');
-svg.id='svg-lines';
-svg.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;';
-chart.appendChild(svg);
-
-function seg(x1,y1,x2,y2,color='#C2BEB0',w=1.5,dash=''){
-  const l=document.createElementNS(NS,'line');
-  l.setAttribute('x1',x1);l.setAttribute('y1',y1);
-  l.setAttribute('x2',x2);l.setAttribute('y2',y2);
-  l.setAttribute('stroke',color);l.setAttribute('stroke-width',w);
-  l.setAttribute('stroke-linecap','round');
-  if(dash) l.setAttribute('stroke-dasharray',dash);
-  svg.appendChild(l);
-}
-
-// Horizontal + verticals for root → cats
-const midY = RY + RH + VG/2;  // midpoint between root-bottom and cat-top
-seg(RCX, RY+RH, RCX, midY);
-seg(catCX(0), midY, catCX(5), midY);
-CATS.forEach((_,i) => seg(catCX(i), midY, catCX(i), CY));
-
-// Root node
-const rootEl=document.createElement('div');
-rootEl.className='root-node';
-rootEl.style.cssText=`left:${RCX-RW/2}px;top:${RY}px;width:${RW}px;height:${RH}px;`;
-rootEl.innerHTML=`<div class="rn">Country Manager of Mexico</div><div class="rs">小米科技 · 国际业务部</div>`;
-chart.appendChild(rootEl);
-
-// Open state
-const state = {};
-CATS.forEach(c=>state[c.key]=false);
-
-// Build each category
-CATS.forEach((cat,i) => {
-  const c=CO[cat.c];
-  const cx=catCX(i);
-  const pl=panelLeft(cat,i);
-  const pw=panelW(cat);
-  const cols=panelCols(cat);
-  const triX=cx-pl;   // px from panel-left to triangle center
-
-  /* ── category node ── */
-  const catEl=document.createElement('div');
-  catEl.className='cat-node';
-  catEl.id=`cat-${cat.key}`;
-  catEl.style.cssText=`left:${catX(i)}px;top:${CY}px;width:${NW}px;height:${NH}px;background:${c.bg};border-color:${c.bd};`;
-  catEl.innerHTML=`
-    <div class="cat-bar" style="background:${c.bd};"></div>
-    <div class="cat-body">
-      <div class="cat-name" style="color:${c.bd};">${cat.label}<span class="cat-arr">▾</span></div>
-      <div class="cat-sub"  style="color:${c.bd};">${cat.sub}</div>
-    </div>`;
-  chart.appendChild(catEl);
-
-  /* ── vertical connector ── */
-  const connEl=document.createElement('div');
-  connEl.className='cat-conn';
-  connEl.id=`conn-${cat.key}`;
-  connEl.style.cssText=`left:${cx-1}px;top:${CB}px;height:${CH}px;background:${c.bd};`;
-  chart.appendChild(connEl);
-
-  /* ── dept panel ── */
-  const deptCards=cat.depts.map(dk=>{
-    const d=DEPTS[dk], dc=CO[d.c];
-    const sub=d.n!==null?`${d.en} · ${d.n}`:d.en;
-    const inf=d.inf?`<div class="dc-inf" style="color:${dc.bd};">inferred</div>`:'';
-    return `<div class="dept-card${d.inf?' inferred':''}" data-key="${dk}"
-      style="background:${dc.bg};border-color:${dc.bd};">
-      <div class="dc-inner">
-        <div class="dc-cn" style="color:${dc.bd};">${d.cn}</div>
-        <div class="dc-en" style="color:${dc.bd};">${sub}</div>
-        ${inf}
-      </div></div>`;
-  }).join('');
-
-  const panelEl=document.createElement('div');
-  panelEl.className='panel-wrap';
-  panelEl.id=`panel-${cat.key}`;
-  panelEl.style.cssText=`left:${pl}px;top:${PY}px;width:${pw}px;border-color:${c.bd}30;`;
-  panelEl.style.setProperty('--tri',`${triX}px`);
-  panelEl.innerHTML=`
-    <div class="panel-clip">
-      <div class="panel-inner">
-        <div class="panel-grid" style="grid-template-columns:repeat(${cols},${DW}px);gap:${DG}px;padding:${DP}px;">
-          ${deptCards}
+<main>
+  <div class="tab-pane active" id="pane-recent">
+    <!-- Snapshot header -->
+    <div class="snapshot-header">
+      <div class="snap-left">
+        <div class="snap-eyebrow" data-en="Recent Snapshot" data-zh="最新快照">Recent Snapshot</div>
+        <div class="snap-week">
+          <span class="snap-week-pill" id="recentWeekLabel">W22</span>
+          <span class="snap-dates" id="snapDateRange"></span>
         </div>
       </div>
-    </div>`;
-  chart.appendChild(panelEl);
+      <div class="snap-right">
+        <div class="filter-group">
+          <span class="filter-label" data-en="Segment" data-zh="档位">Segment</span>
+          <div class="chip-row" id="recentSegChips">
+            <button class="chip active" data-rseg="all" data-en="All" data-zh="全部">All</button>
+            <button class="chip" data-rseg="entry" data-en="Entry" data-zh="入门">Entry</button>
+            <button class="chip" data-rseg="note">Note</button>
+            <button class="chip" data-rseg="high" data-en="High" data-zh="高端">High</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;margin-left:8px">
+          <span class="mom-badge" style="background:rgba(195,232,141,.14);color:#c3e88d" data-en="&#8595; below MSRP" data-zh="&#8595; 低于建议价">&#8595; below MSRP</span>
+          <span class="mom-badge" style="background:rgba(255,143,64,.12);color:var(--poco)">Xiaomi</span>
+          <span class="mom-badge mom-neg" data-en="cheaper competitor" data-zh="竞品更低价">cheaper competitor</span>
+        </div>
+      </div>
+    </div>
+    <div class="matrix-wrap">
+      <table class="matrix-table" id="recentTable">
+        <colgroup><col style="width:60px"><col style="width:calc((100% - 60px)/5)"><col style="width:calc((100% - 60px)/5)"><col style="width:calc((100% - 60px)/5)"><col style="width:calc((100% - 60px)/5)"><col style="width:calc((100% - 60px)/5)"></colgroup>
+        <thead><tr>
+          <th class="matrix-corner" data-en="Seg" data-zh="档位">Seg</th>
+          <th style="color:var(--poco)">Xiaomi</th>
+          <th style="color:var(--samsung)">Samsung</th>
+          <th style="color:var(--honor)">Honor</th>
+          <th style="color:var(--motorola)">Motorola</th>
+          <th style="color:var(--oppo)">OPPO</th>
+        </tr></thead>
+        <tbody id="recentTbody"></tbody>
+      </table>
+    </div>
+  </div>
 
-  /* ── click: toggle this panel, close others ── */
-  catEl.addEventListener('click', ()=>{
-    const wasOpen=state[cat.key];
-    CATS.forEach(c2=>{
-      state[c2.key]=false;
-      document.getElementById(`cat-${c2.key}`).classList.remove('open');
-      document.getElementById(`panel-${c2.key}`).classList.remove('open');
-      document.getElementById(`conn-${c2.key}`).classList.remove('open');
+  <div class="tab-pane" id="pane-historical">
+    <div class="hist-filters">
+      <div class="filter-group">
+        <span class="filter-label" data-en="Segment" data-zh="档位">Segment</span>
+        <div class="chip-row">
+          <button class="chip active" data-seg="all" data-en="All" data-zh="全部">All</button>
+          <button class="chip" data-seg="&#20837;&#38376;" data-en="Entry" data-zh="入门">Entry</button>
+          <button class="chip" data-seg="Note">Note</button>
+          <button class="chip" data-seg="&#39640;&#31471;" data-en="High" data-zh="高端">High</button>
+        </div>
+      </div>
+      <div class="filter-divider"></div>
+      <div class="filter-group">
+        <span class="filter-label" data-en="Brand" data-zh="品牌">Brand</span>
+        <div class="chip-row">
+          <button class="chip active" data-brand="all" data-en="All" data-zh="全部">All</button>
+          <button class="chip" data-brand="&#23567;&#31859;"><span class="dot" style="background:var(--poco)"></span>Xiaomi</button>
+          <button class="chip" data-brand="&#19977;&#26143;"><span class="dot" style="background:var(--samsung)"></span>Samsung</button>
+          <button class="chip" data-brand="&#25657;&#25176;&#32599;&#25289;"><span class="dot" style="background:var(--motorola)"></span>Motorola</button>
+          <button class="chip" data-brand="&#33655;&#32988;"><span class="dot" style="background:var(--honor)"></span>Honor</button>
+          <button class="chip" data-brand="OPPO"><span class="dot" style="background:var(--oppo)"></span>OPPO</button>
+        </div>
+      </div>
+      <div class="filter-divider"></div>
+      <div class="filter-group">
+        <span class="filter-label" data-en="Weeks" data-zh="周期">Weeks</span>
+        <select class="week-select" id="weekFrom"></select>
+        <span class="week-sep">&#8594;</span>
+        <select class="week-select" id="weekTo"></select>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-head">
+        <div class="chart-title" data-en="Price Trends &mdash; MXN" data-zh="价格趋势 &mdash; 墨西哥比索">Price Trends &mdash; MXN</div>
+        <div class="chart-hint"><span class="gap-swatch"></span><span data-en="dashed = week not recorded" data-zh="虚线 = 该周无数据">dashed = week not recorded</span></div>
+      </div>
+      <div class="swim-outer" id="swimOuter">
+        <div class="swim-axis-row" id="swimAxisRow"></div>
+        <div class="swim-body" id="swimBody"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-pane" id="pane-readme">
+  <div class="readme-lang-panel active" id="readme-en">
+
+    <!-- About -->
+    <div class="readme-full">
+      <h2>&#128202; About This Dashboard</h2>
+      <p>This is a <strong>competitive price intelligence tool</strong> for Xiaomi &amp; Redmi Mexico, tracking the weekly retail prices of <strong>48 SKUs</strong> across five brands — Xiaomi, Samsung, Honor, Motorola, and OPPO — in the Mexican market. Data is collected <strong>twice a week</strong> (Monday and Thursday) from W23 onward. All data is embedded directly in the HTML file; no internet connection or server is needed to view it.</p>
+    </div>
+
+    <!-- Tab guide + Folder contents -->
+    <div class="readme-grid">
+
+      <div class="readme-section">
+        <h2>&#128196; Tab Guide</h2>
+
+        <h3>Recent</h3>
+        <p>A brand &times; price-tier matrix showing the <strong>current week's prices</strong> for every tracked SKU. Rows are anchored to Xiaomi models sorted by price within each segment. <strong>Red highlight</strong> = a competitor is cheaper than Xiaomi in that row. Badges show week-over-week change and MSRP delta. Use the <strong>Segment chips</strong> to filter by Entry / Note / High.</p>
+
+        <h3>Historical Data</h3>
+        <p>A swimlane trend chart showing price movement over time. Filter by segment, brand, and week range using the controls above the chart. Dashed lines indicate weeks where no price was recorded for that SKU.</p>
+
+        <h3>Readme</h3>
+        <p>This page.</p>
+
+        <h3>Export button</h3>
+        <p>Downloads the current Recent snapshot as a formatted <code>.xlsx</code> file with colored brand headers and prices formatted as <code>config $price / config $price</code> for multi-memory models.</p>
+      </div>
+
+      <div class="readme-section">
+        <h2>&#128193; Folder Contents</h2>
+        <div class="readme-file-row"><span class="readme-file-name">competitor_price_tracker.html</span><span class="readme-file-desc">The dashboard — open in any browser. Self-contained, no server needed.</span></div>
+        <div class="readme-file-row"><span class="readme-file-name">historical_data.xlsx</span><span class="readme-file-desc">Master price history. Two sheets: <strong>historical_data</strong> (all weekly records) and <strong>MSRP</strong> (reference prices). This is the source of truth — the dashboard is generated from it.</span></div>
+        <div class="readme-file-row"><span class="readme-file-name">SKUS.xlsx</span><span class="readme-file-desc">List of all 48 tracked models with their product URLs. Edit this to add or remove SKUs.</span></div>
+        <div class="readme-file-row"><span class="readme-file-name">update_prices.py</span><span class="readme-file-desc">The update script. Run this every Monday and Thursday to collect prices and refresh the dashboard.</span></div>
+        <div class="readme-file-row"><span class="readme-file-name">raw_data.xlsx</span><span class="readme-file-desc">Original raw weekly snapshots used during initial setup only. Not used by the update script going forward.</span></div>
+        <div class="readme-file-row"><span class="readme-file-name">PROJECT_HANDOFF.md</span><span class="readme-file-desc">Original project handoff notes.</span></div>
+      </div>
+
+    </div>
+
+    <!-- First-time setup -->
+    <div class="readme-full">
+      <h2>&#9881;&#65039; First-Time Setup</h2>
+      <p>Do this once before running the update script for the first time.</p>
+
+      <div class="readme-step">
+        <div class="readme-step-num">1</div>
+        <div class="readme-step-body">
+          <strong>Install Python 3.9 or later</strong>
+          <p>Download from <strong>python.org</strong>. During installation, check <strong>"Add Python to PATH"</strong>. Verify by running <code>python --version</code> in Command Prompt.</p>
+        </div>
+      </div>
+
+      <div class="readme-step">
+        <div class="readme-step-num">2</div>
+        <div class="readme-step-body">
+          <strong>Install Python dependencies</strong>
+          <p>Open Command Prompt and run:<br><code>pip install requests beautifulsoup4 openpyxl pandas playwright</code></p>
+        </div>
+      </div>
+
+      <div class="readme-step">
+        <div class="readme-step-num">3</div>
+        <div class="readme-step-body">
+          <strong>Install the Chromium browser for Playwright</strong>
+          <p>Still in Command Prompt, run:<br><code>python -m playwright install chromium</code><br>This downloads a headless browser (~130 MB) used to fetch prices from telcel.com, which blocks regular HTTP requests.</p>
+        </div>
+      </div>
+
+      <div class="readme-step">
+        <div class="readme-step-num">4</div>
+        <div class="readme-step-body">
+          <strong>Verify the setup with a dry run</strong>
+          <p>Navigate to the project folder in Command Prompt and run:<br><code>cd "C:\Users\...\Xiaomi &amp; Redmi Competition"</code><br><code>python update_prices.py --dry-run</code><br>You should see prices auto-fetched for most SKUs. Nothing gets saved in dry-run mode.</p>
+        </div>
+      </div>
+
+      <div class="readme-warn">&#9888; Always use <strong>Command Prompt (cmd.exe)</strong>, not PowerShell. PowerShell has encoding issues with the Chinese characters in the script.</div>
+    </div>
+
+    <!-- Weekly update -->
+    <div class="readme-full">
+      <h2>&#128260; Weekly Update — Monday &amp; Thursday</h2>
+
+      <div class="readme-step">
+        <div class="readme-step-num">1</div>
+        <div class="readme-step-body">
+          <strong>Open Command Prompt and navigate to the folder</strong>
+          <p><code>cd "C:\Users\...\Xiaomi &amp; Redmi Competition"</code></p>
+        </div>
+      </div>
+
+      <div class="readme-step">
+        <div class="readme-step-num">2</div>
+        <div class="readme-step-body">
+          <strong>Run the update script</strong>
+          <p>On Monday: <code>python update_prices.py --monday</code><br>On Thursday: <code>python update_prices.py --thursday</code><br>The script labels the week automatically (e.g. <code>W23-M</code> or <code>W23-T</code>).</p>
+        </div>
+      </div>
+
+      <div class="readme-step">
+        <div class="readme-step-num">3</div>
+        <div class="readme-step-body">
+          <strong>Wait for auto-fetch to complete</strong>
+          <p>The script launches a headless browser and fetches prices from telcel.com for all ~43 Telcel SKUs, plus mi.com and coppel.com for the remaining 2. This takes about <strong>1–2 minutes</strong>. You'll see <code>[OK]</code> for each successful fetch and <code>[--]</code> for failures.</p>
+        </div>
+      </div>
+
+      <div class="readme-step">
+        <div class="readme-step-num">4</div>
+        <div class="readme-step-body">
+          <strong>Enter prices for any failed fetches</strong>
+          <p>After auto-fetch, the script prompts you only for SKUs it couldn't fetch automatically. Open the product URL shown, check the price, and type it in. Enter <code>s</code> to skip a SKU if it's out of stock or delisted.</p>
+        </div>
+      </div>
+
+      <div class="readme-step">
+        <div class="readme-step-num">5</div>
+        <div class="readme-step-body">
+          <strong>Check the dashboard</strong>
+          <p>Refresh <code>competitor_price_tracker.html</code> in your browser. The Recent tab should now show the new week label and updated prices. The Historical chart will also include the new data point.</p>
+        </div>
+      </div>
+
+      <div class="readme-step">
+        <div class="readme-step-num">6</div>
+        <div class="readme-step-body">
+          <strong>If something looks wrong — revert</strong>
+          <p>To erase a week's data and roll back the dashboard:<br><code>python update_prices.py --revert W23-M</code><br>Replace <code>W23-M</code> with the label you want to remove. This deletes those rows from <code>historical_data.xlsx</code> and regenerates the dashboard.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Adding SKUs + Troubleshooting -->
+    <div class="readme-grid">
+
+      <div class="readme-section">
+        <h2>&#43; Adding or Removing SKUs</h2>
+
+        <h3>To add a new model</h3>
+        <p>Open <code>SKUS.xlsx</code> and add a new row with these columns:</p>
+        <ul>
+          <li><strong>档位</strong> — segment: <code>入门</code> (Entry), <code>Note</code>, or <code>高端</code> (High)</li>
+          <li><strong>品牌</strong> — brand in Chinese: <code>小米</code>, <code>三星</code>, <code>荣耀</code>, <code>摩托罗拉</code>, or <code>OPPO</code></li>
+          <li><strong>机型</strong> — model name (e.g. <code>Galaxy A37 5G</code>)</li>
+          <li><strong>配置</strong> — memory config (e.g. <code>8+256</code>)</li>
+          <li><strong>链接</strong> — product URL (telcel.com, mi.com, or coppel.com)</li>
+        </ul>
+        <p>Also add an MSRP row in the <strong>MSRP</strong> sheet of <code>historical_data.xlsx</code> with the same 档位 / 品牌 / 机型 / 配置 columns plus the <strong>MSRP</strong> price.</p>
+
+        <h3>To remove a model</h3>
+        <p>Delete its row from <code>SKUS.xlsx</code>. Its historical data remains in <code>historical_data.xlsx</code> and will still appear in the Historical chart, but it won't be collected in future updates.</p>
+      </div>
+
+      <div class="readme-section">
+        <h2>&#128295; Troubleshooting</h2>
+
+        <h3>Script exits silently after "loading constants..."</h3>
+        <p>The <code>main()</code> function wasn't called — this was a known bug that has been fixed. Make sure you're running the latest version of <code>update_prices.py</code>.</p>
+
+        <h3>Most fetches fail / show [--]</h3>
+        <p>Playwright may not be installed. Run <code>python -m playwright install chromium</code>. If already installed, telcel.com may be blocking the headless browser — try re-running; it usually succeeds on retry.</p>
+
+        <h3>Script crashes with encoding error</h3>
+        <p>You're running in PowerShell. Switch to <strong>Command Prompt (cmd.exe)</strong> instead.</p>
+
+        <h3>Dashboard shows old data after update</h3>
+        <p>Hard-refresh the browser: <strong>Ctrl + Shift + R</strong> (Windows) or <strong>Cmd + Shift + R</strong> (Mac). The HTML file is locally cached by some browsers.</p>
+
+        <h3>historical_data.xlsx won't open / is corrupt</h3>
+        <p>The file may not have fully synced from iCloud. Wait a few seconds and try again. If the issue persists on the update script side, the script has a built-in EOCD repair that handles this automatically.</p>
+
+        <h3>Week label conflict ("week already in dataset")</h3>
+        <p>You're running the script for a week that already has data. The script will ask if you want to overwrite — type <code>y</code> to replace, or <code>n</code> to abort.</p>
+      </div>
+
+    </div>
+
+    <!-- Data dictionary -->
+    <div class="readme-full">
+      <h2>&#128214; Data Dictionary</h2>
+
+      <h3>historical_data sheet columns</h3>
+      <ul>
+        <li><strong>周</strong> — Week label, e.g. <code>W23-M</code> (Monday of ISO week 23) or <code>W23-T</code> (Thursday)</li>
+        <li><strong>档位</strong> — Segment: <code>入门</code> = Entry (~$1,499–4,499 MXN), <code>Note</code> (~$4,999–10,999), <code>高端</code> = High (~$11,000+)</li>
+        <li><strong>品牌</strong> — Brand (Chinese name, see brand color table below)</li>
+        <li><strong>机型</strong> — Model name</li>
+        <li><strong>配置</strong> — Memory configuration, e.g. <code>8+256</code> = 8 GB RAM + 256 GB storage. <code>(Bundle)</code> suffix = sold with plan on telcel.com</li>
+        <li><strong>价格</strong> — Retail price in MXN at time of collection</li>
+      </ul>
+
+      <h3>Brand reference</h3>
+      <ul>
+        <li><span style="color:var(--poco);font-weight:600">■</span> <strong>小米</strong> — Xiaomi / Redmi</li>
+        <li><span style="color:var(--samsung);font-weight:600">■</span> <strong>三星</strong> — Samsung</li>
+        <li><span style="color:var(--honor);font-weight:600">■</span> <strong>荣耀</strong> — Honor</li>
+        <li><span style="color:var(--motorola);font-weight:600">■</span> <strong>摩托罗拉</strong> — Motorola</li>
+        <li><span style="color:var(--oppo);font-weight:600">■</span> <strong>OPPO</strong> — OPPO</li>
+      </ul>
+
+      <h3>Week label convention</h3>
+      <ul>
+        <li><code>W23-M</code> — Monday snapshot of ISO week 23</li>
+        <li><code>W23-T</code> — Thursday snapshot of ISO week 23</li>
+        <li><code>W22</code> — Legacy single weekly snapshot (used for W02–W22)</li>
+      </ul>
+    </div>
+
+  </div><!-- /readme-en -->
+
+  <div class="readme-lang-panel" id="readme-zh">
+
+    <div class="readme-full">
+      <h2>&#128202; 关于本仪表盘</h2>
+      <p>本工具是 Xiaomi &amp; Redmi 墨西哥市场的<strong>竞争价格情报系统</strong>，追踪 <strong>48 个 SKU</strong> 在五大品牌（Xiaomi、Samsung、Honor、Motorola、OPPO）的每周零售价格。从 W23 起每周采集<strong>两次数据</strong>（周一和周四）。所有数据直接嵌入 HTML 文件，无需联网或服务器即可查看。</p>
+    </div>
+
+    <div class="readme-grid">
+      <div class="readme-section">
+        <h2>&#128196; 标签页说明</h2>
+        <h3>最新价格</h3>
+        <p>品牌 &times; 价格档位矩阵，展示所有追踪 SKU 的<strong>本周价格</strong>。行以 Xiaomi 机型为基准，按价格排序。<strong>红色高亮</strong> = 竞品价格低于 Xiaomi。角标显示周环比变化和建议价差异。使用<strong>档位</strong>芯片切换入门 / Note / 高端。</p>
+        <h3>历史数据</h3>
+        <p>泳道趋势图，展示价格随时间的变化。通过图表上方的控件按档位、品牌、周期筛选。虚线表示该 SKU 在当周无价格记录。</p>
+        <h3>说明</h3>
+        <p>即本页面。</p>
+        <h3>导出按钮</h3>
+        <p>将当前最新快照下载为格式化的 <code>.xlsx</code> 文件，品牌标题带颜色，多内存型号价格以 <code>配置 $价格 / 配置 $价格</code> 格式呈现。</p>
+      </div>
+
+      <div class="readme-section">
+        <h2>&#128193; 文件夹内容</h2>
+        <div class="readme-file-row"><span class="readme-file-name">competitor_price_tracker.html</span><span class="readme-file-desc">价格追踪仪表盘，用任意浏览器打开，无需服务器，完全独立。</span></div>
+        <div class="readme-file-row"><span class="readme-file-name">historical_data.xlsx</span><span class="readme-file-desc">价格主数据库，包含两个工作表：<strong>historical_data</strong>（所有周记录）和 <strong>MSRP</strong>（参考价格）。这是数据源——仪表盘由此生成。</span></div>
+        <div class="readme-file-row"><span class="readme-file-name">SKUS.xlsx</span><span class="readme-file-desc">48 个追踪机型及商品链接，新增或删除机型时编辑此文件。</span></div>
+        <div class="readme-file-row"><span class="readme-file-name">update_prices.py</span><span class="readme-file-desc">价格更新脚本，每周一和周四运行，用于采集价格并刷新仪表盘。</span></div>
+        <div class="readme-file-row"><span class="readme-file-name">raw_data.xlsx</span><span class="readme-file-desc">初始设置时使用的原始周快照，之后更新不再使用此文件。</span></div>
+        <div class="readme-file-row"><span class="readme-file-name">PROJECT_HANDOFF.md</span><span class="readme-file-desc">原始项目交接说明。</span></div>
+      </div>
+    </div>
+
+    <div class="readme-full">
+      <h2>&#9881;&#65039; 首次配置</h2>
+      <p>首次运行更新脚本前，请完成以下步骤。</p>
+      <div class="readme-step"><div class="readme-step-num">1</div><div class="readme-step-body">
+        <strong>安装 Python 3.9 或更新版本</strong>
+        <p>从 <strong>python.org</strong> 下载安装。安装时勾选 <strong>"Add Python to PATH"</strong>。通过运行 <code>python --version</code> 验证。</p>
+      </div></div>
+      <div class="readme-step"><div class="readme-step-num">2</div><div class="readme-step-body">
+        <strong>安装 Python 依赖包</strong>
+        <p>打开命令提示符，运行：<br><code>pip install requests beautifulsoup4 openpyxl pandas playwright</code></p>
+      </div></div>
+      <div class="readme-step"><div class="readme-step-num">3</div><div class="readme-step-body">
+        <strong>安装 Playwright Chromium 浏览器</strong>
+        <p>在命令提示符中运行：<br><code>python -m playwright install chromium</code><br>这将下载一个无头浏览器（约 130 MB），用于从 telcel.com 获取价格（该网站会屏蔽普通 HTTP 请求）。</p>
+      </div></div>
+      <div class="readme-step"><div class="readme-step-num">4</div><div class="readme-step-body">
+        <strong>通过演习运行验证配置</strong>
+        <p>在命令提示符中进入项目文件夹，运行：<br><code>cd "C:\Users\...\Xiaomi &amp; Redmi Competition"</code><br><code>python update_prices.py --dry-run</code><br>大多数 SKU 应能自动获取价格。演习模式不保存任何数据。</p>
+      </div></div>
+      <div class="readme-warn">&#9888; 请始终使用<strong>命令提示符（cmd.exe）</strong>，而非 PowerShell。PowerShell 对脚本中的中文字符存在编码问题。</div>
+    </div>
+
+    <div class="readme-full">
+      <h2>&#128260; 每周更新 — 周一 &amp; 周四</h2>
+      <div class="readme-step"><div class="readme-step-num">1</div><div class="readme-step-body">
+        <strong>打开命令提示符，进入项目文件夹</strong>
+        <p><code>cd "C:\Users\...\Xiaomi &amp; Redmi Competition"</code></p>
+      </div></div>
+      <div class="readme-step"><div class="readme-step-num">2</div><div class="readme-step-body">
+        <strong>运行更新脚本</strong>
+        <p>周一运行：<code>python update_prices.py --monday</code><br>周四运行：<code>python update_prices.py --thursday</code><br>脚本会自动生成周标签（如 <code>W23-M</code> 或 <code>W23-T</code>）。</p>
+      </div></div>
+      <div class="readme-step"><div class="readme-step-num">3</div><div class="readme-step-body">
+        <strong>等待自动采集完成</strong>
+        <p>脚本启动无头浏览器，依次从 telcel.com（约 43 个 SKU）、mi.com 和 coppel.com 获取价格。耗时约 <strong>1—2 分钟</strong>。采集成功显示 <code>[OK]</code>，失败显示 <code>[--]</code>。</p>
+      </div></div>
+      <div class="readme-step"><div class="readme-step-num">4</div><div class="readme-step-body">
+        <strong>手动输入采集失败的价格</strong>
+        <p>自动采集完成后，脚本仅提示无法自动获取的 SKU。打开显示的商品链接，查询价格并输入。输入 <code>s</code> 可跳过已下架或缺货的机型。</p>
+      </div></div>
+      <div class="readme-step"><div class="readme-step-num">5</div><div class="readme-step-body">
+        <strong>检查仪表盘</strong>
+        <p>在浏览器中刷新 <code>competitor_price_tracker.html</code>，最新价格标签页应显示新的周标签和更新后的价格，历史数据图表也会新增数据点。</p>
+      </div></div>
+      <div class="readme-step"><div class="readme-step-num">6</div><div class="readme-step-body">
+        <strong>如有问题——回退</strong>
+        <p>如需删除某周数据并回滚仪表盘：<br><code>python update_prices.py --revert W23-M</code><br>将 <code>W23-M</code> 替换为需要删除的标签。该命令会从 <code>historical_data.xlsx</code> 删除相关行并重新生成仪表盘。</p>
+      </div></div>
+    </div>
+
+    <div class="readme-grid">
+      <div class="readme-section">
+        <h2>&#43; 新增或删除追踪机型</h2>
+        <h3>新增机型</h3>
+        <p>打开 <code>SKUS.xlsx</code>，添加包含以下列的新行：</p>
+        <ul>
+          <li><strong>档位</strong> — <code>入门</code>、<code>Note</code> 或 <code>高端</code></li>
+          <li><strong>品牌</strong> — 品牌中文名：<code>小米</code>、<code>三星</code>、<code>荣耀</code>、<code>摩托罗拉</code> 或 <code>OPPO</code></li>
+          <li><strong>机型</strong> — 型号名称（如 <code>Galaxy A37 5G</code>）</li>
+          <li><strong>配置</strong> — 内存配置（如 <code>8+256</code>）</li>
+          <li><strong>链接</strong> — 商品链接（telcel.com、mi.com 或 coppel.com）</li>
+        </ul>
+        <p>同时在 <code>historical_data.xlsx</code> 的 <strong>MSRP</strong> 工作表中添加对应行（档位 / 品牌 / 机型 / 配置 + MSRP 价格）。</p>
+        <h3>删除机型</h3>
+        <p>从 <code>SKUS.xlsx</code> 删除对应行。历史数据仍保留在 <code>historical_data.xlsx</code> 中并显示于历史图表，但不再参与后续更新采集。</p>
+      </div>
+
+      <div class="readme-section">
+        <h2>&#128295; 常见问题排查</h2>
+        <h3>脚本在"loading constants..."后静默退出</h3>
+        <p><code>main()</code> 函数未被调用——这是已修复的已知 bug。请确保使用最新版 <code>update_prices.py</code>。</p>
+        <h3>大多数价格采集失败 / 显示 [--]</h3>
+        <p>可能是 Playwright 未安装。运行 <code>python -m playwright install chromium</code>。若已安装，telcel.com 可能暂时屏蔽了无头浏览器——重新运行通常可解决。</p>
+        <h3>脚本崩溃并报编码错误</h3>
+        <p>你在使用 PowerShell。请切换至<strong>命令提示符（cmd.exe）</strong>。</p>
+        <h3>更新后仪表盘仍显示旧数据</h3>
+        <p>强制刷新浏览器：Windows 按 <strong>Ctrl + Shift + R</strong>，Mac 按 <strong>Cmd + Shift + R</strong>。</p>
+        <h3>historical_data.xlsx 无法打开 / 文件损坏</h3>
+        <p>文件可能未从 iCloud 完全同步。稍等片刻后重试。脚本内置了 EOCD 修复机制，可自动处理大多数同步问题。</p>
+        <h3>周标签冲突（"week already in dataset"）</h3>
+        <p>该周数据已存在。脚本会询问是否覆盖——输入 <code>y</code> 覆盖，输入 <code>n</code> 中止。</p>
+      </div>
+    </div>
+
+    <div class="readme-full">
+      <h2>&#128214; 数据字典</h2>
+      <h3>historical_data 工作表列说明</h3>
+      <ul>
+        <li><strong>周</strong> — 周标签，如 <code>W23-M</code>（第 23 个 ISO 周的周一）或 <code>W23-T</code>（周四）</li>
+        <li><strong>档位</strong> — 价格段：<code>入门</code>（约 MXN $1,499–4,499）、<code>Note</code>（约 $4,999–10,999）、<code>高端</code>（约 $11,000 以上）</li>
+        <li><strong>品牌</strong> — 品牌中文名（参见下方品牌对照）</li>
+        <li><strong>机型</strong> — 型号名称</li>
+        <li><strong>配置</strong> — 内存配置，如 <code>8+256</code> = 8 GB 运存 + 256 GB 存储。<code>(Bundle)</code> 后缀 = telcel.com 套餐销售机型</li>
+        <li><strong>价格</strong> — 采集时的墨西哥比索（MXN）零售价</li>
+      </ul>
+      <h3>品牌对照</h3>
+      <ul>
+        <li><span style="color:var(--poco);font-weight:600">■</span> <strong>小米</strong> — Xiaomi / Redmi</li>
+        <li><span style="color:var(--samsung);font-weight:600">■</span> <strong>三星</strong> — Samsung</li>
+        <li><span style="color:var(--honor);font-weight:600">■</span> <strong>荣耀</strong> — Honor</li>
+        <li><span style="color:var(--motorola);font-weight:600">■</span> <strong>摩托罗拉</strong> — Motorola</li>
+        <li><span style="color:var(--oppo);font-weight:600">■</span> <strong>OPPO</strong> — OPPO</li>
+      </ul>
+      <h3>周标签规范</h3>
+      <ul>
+        <li><code>W23-M</code> — 第 23 个 ISO 周的周一快照</li>
+        <li><code>W23-T</code> — 第 23 个 ISO 周的周四快照</li>
+        <li><code>W22</code> — 旧版单周快照（用于 W02–W22）</li>
+      </ul>
+    </div>
+
+  </div><!-- /readme-zh -->
+
+  </div><!-- /pane-readme -->
+</main>
+<div id="tooltip"></div>
+<script>
+const D={"skus":[{"segment":"入门","brand":"小米","model":"A5","config":"3+64","prices":{"W02":1999,"W03":1999,"W04":1999,"W05":1999,"W06":1999,"W07":1999,"W09":1999,"W10":1999,"W11":1999,"W12":1999,"W13":1999,"W15":1999,"W16":1999,"W17":1999,"W18":1999,"W19":1999,"W20":1999,"W21":1999,"W22":1999},"latest":1999,"latestWeek":"W22"},{"segment":"入门","brand":"小米","model":"A5","config":"4+128","prices":{"W02":2099,"W03":2399,"W04":2399,"W05":2399,"W06":2399,"W07":2399,"W09":2399,"W10":2399,"W11":2399,"W12":2399,"W13":2399,"W15":2399,"W16":2399,"W17":2399,"W18":2399,"W19":2399,"W20":2399,"W21":2399,"W22":2399},"latest":2399,"latestWeek":"W22"},{"segment":"入门","brand":"小米","model":"15C","config":"4+128","prices":{"W02":2799,"W03":2999,"W04":2999,"W05":2999,"W06":2999,"W07":2999,"W09":2999,"W10":2799,"W11":2799,"W12":2799,"W13":2799,"W15":2799,"W16":2799,"W17":2799,"W18":2799,"W19":2799,"W20":2799,"W21":2799,"W22":2799},"latest":2799,"latestWeek":"W22"},{"segment":"入门","brand":"小米","model":"15C","config":"4+256","prices":{"W15":3099,"W16":3099,"W17":3099,"W18":3099,"W19":3099,"W20":3099,"W21":3099,"W22":3099},"latest":3099,"latestWeek":"W22"},{"segment":"入门","brand":"小米","model":"A7 Pro","config":"4+128","prices":{"W21":3299,"W22":3299},"latest":3299,"latestWeek":"W22"},{"segment":"入门","brand":"小米","model":"Redmi 15","config":"8+256","prices":{"W02":3999,"W03":3999,"W04":3999,"W05":3999,"W06":4499,"W07":4499,"W09":4499,"W10":4499,"W11":4499,"W12":4499,"W13":4499,"W15":4499,"W16":4499,"W17":4499,"W18":4499,"W19":4499,"W20":4499,"W21":4499,"W22":4499},"latest":4499,"latestWeek":"W22"},{"segment":"入门","brand":"三星","model":"A07","config":"4+64","prices":{"W02":1999,"W03":1999,"W04":1699,"W05":1699,"W06":1699,"W07":1699,"W09":1699,"W10":1999,"W11":1699,"W12":1699,"W13":1999,"W15":1799,"W16":1999,"W17":1999,"W18":1499,"W19":1499,"W20":1699,"W21":1499,"W22":1499},"latest":1499,"latestWeek":"W22"},{"segment":"入门","brand":"三星","model":"A17 4G","config":"4+128","prices":{"W02":2999,"W03":2999,"W04":2999,"W05":3999,"W06":2999,"W07":2599,"W09":2599,"W10":3199,"W11":2599,"W12":2599,"W13":2999,"W15":3299,"W16":3499,"W17":3499,"W18":2599,"W19":2599,"W20":2599,"W21":2599,"W22":2599},"latest":2599,"latestWeek":"W22"},{"segment":"入门","brand":"三星","model":"A07","config":"4+128","prices":{"W21":2999,"W22":2999},"latest":2999,"latestWeek":"W22"},{"segment":"入门","brand":"三星","model":"A17 5G","config":"4+128","prices":{"W02":3499,"W03":3499,"W04":3499,"W05":4599,"W06":3799,"W07":4599,"W09":4599,"W10":3699,"W11":3699,"W12":3699,"W13":3699,"W15":3499,"W16":3999,"W17":3999,"W18":3999,"W19":3999,"W20":4599,"W21":4599,"W22":4599},"latest":4599,"latestWeek":"W22"},{"segment":"入门","brand":"摩托罗拉","model":"G06","config":"4+64","prices":{"W02":1999,"W03":1999,"W04":1999,"W05":1999,"W06":1999,"W07":1999,"W09":1999,"W10":1999,"W11":1999,"W12":1999,"W13":1999,"W15":1999,"W16":1999,"W17":1999,"W18":1999,"W19":1999,"W20":1999,"W21":1999,"W22":1999},"latest":1999,"latestWeek":"W22"},{"segment":"入门","brand":"摩托罗拉","model":"G06","config":"4+128","prices":{"W02":2499,"W03":2499,"W04":2499,"W05":2499,"W06":2399,"W07":2499,"W09":2499,"W10":2499,"W11":2499,"W12":2499,"W13":2499,"W15":2499,"W16":2499,"W17":2499,"W18":2499,"W19":2499,"W20":2499,"W21":2499,"W22":2499},"latest":2499,"latestWeek":"W22"},{"segment":"入门","brand":"摩托罗拉","model":"G06","config":"4+256","prices":{"W21":2999,"W22":2999},"latest":2999,"latestWeek":"W22"},{"segment":"入门","brand":"摩托罗拉","model":"G15","config":"4+256","prices":{"W02":3599,"W03":3599,"W04":3599,"W05":3199,"W06":3199,"W07":3599,"W09":3599,"W10":2999,"W11":2999,"W12":2999,"W13":3599,"W15":3599,"W16":3599,"W17":3599,"W18":3299,"W19":3299,"W20":3299},"latest":3299,"latestWeek":"W20"},{"segment":"入门","brand":"摩托罗拉","model":"G35 5G","config":"4+256","prices":{"W02":3599,"W03":3499,"W04":3499},"latest":3499,"latestWeek":"W04"},{"segment":"入门","brand":"摩托罗拉","model":"G55 5G","config":"8+256","prices":{"W07":4199,"W09":4199,"W10":4199,"W11":4199,"W12":4199,"W13":4199,"W15":4199,"W16":4199,"W17":4199,"W18":4199,"W19":4199,"W20":4199,"W21":4199,"W22":4199},"latest":4199,"latestWeek":"W22"},{"segment":"入门","brand":"荣耀","model":"X5C","config":"4+128","prices":{"W02":1999,"W03":1999,"W04":1999,"W05":1999,"W06":1999,"W07":1999,"W09":1999,"W10":1999,"W11":1999,"W12":1999,"W13":1999,"W15":1999,"W16":1999,"W17":1999,"W18":1999,"W19":1999,"W20":1999,"W21":1999,"W22":1999},"latest":1999,"latestWeek":"W22"},{"segment":"入门","brand":"荣耀","model":"X5C Plus","config":"4+256","prices":{"W02":2999,"W03":2999,"W04":2999,"W05":2999,"W06":2999,"W07":2999,"W09":2999,"W10":2999,"W11":2999,"W12":2999,"W13":2999,"W15":2999,"W16":2999,"W17":2999,"W18":2999,"W19":2999,"W20":2999,"W21":2999,"W22":2999},"latest":2999,"latestWeek":"W22"},{"segment":"入门","brand":"荣耀","model":"X6C","config":"4+256","prices":{"W02":3999,"W03":3999,"W04":3999,"W05":3999,"W06":3999,"W07":3999,"W09":3999,"W10":3999,"W11":3999,"W12":3999,"W13":3999,"W15":3999,"W16":3999,"W17":3999,"W18":3999,"W19":3999,"W20":3999,"W21":3999,"W22":3999},"latest":3999,"latestWeek":"W22"},{"segment":"入门","brand":"OPPO","model":"A17","config":"4+128","prices":{"W16":3499,"W17":3499,"W18":3499,"W19":3499,"W20":3499,"W21":3499,"W22":3499},"latest":3499,"latestWeek":"W22"},{"segment":"入门","brand":"OPPO","model":"A6X","config":"4+128","prices":{"W04":3699,"W05":3699,"W06":3699,"W07":3699,"W09":3699,"W10":3699,"W11":3699,"W12":3699,"W13":3699,"W15":3699,"W16":3699,"W17":3699,"W18":3699,"W19":3699,"W20":3699,"W21":3699,"W22":3699},"latest":3699,"latestWeek":"W22"},{"segment":"入门","brand":"OPPO","model":"A40","config":"4+256","prices":{"W02":2999,"W03":2999,"W04":2999,"W05":2999,"W06":3999},"latest":3999,"latestWeek":"W06"},{"segment":"入门","brand":"OPPO","model":"A5","config":"4+256","prices":{"W02":4199,"W03":4199,"W04":4199,"W05":4199,"W06":4199,"W07":4499,"W09":4499,"W10":4499,"W11":4499,"W12":4499,"W13":4499,"W15":4499,"W16":4499,"W17":4499,"W18":4499,"W19":4499,"W20":4499,"W21":4499,"W22":4499},"latest":4499,"latestWeek":"W22"},{"segment":"Note","brand":"小米","model":"Note 14","config":"8+256","prices":{"W02":3999,"W03":3999,"W04":3999,"W05":3999,"W06":4999},"latest":4999,"latestWeek":"W06"},{"segment":"Note","brand":"小米","model":"Note 15","config":"8+256","prices":{"W07":5499,"W09":5499,"W10":5999,"W11":5999,"W12":5999,"W13":5999,"W15":5499,"W16":5499,"W17":5499,"W18":4999,"W19":4999,"W20":5499,"W21":5499,"W22":5499},"latest":5499,"latestWeek":"W22"},{"segment":"Note","brand":"小米","model":"Note 14 Pro","config":"8+256","prices":{"W02":5999,"W03":4509,"W04":5999,"W05":5999,"W06":6999},"latest":6999,"latestWeek":"W06"},{"segment":"Note","brand":"小米","model":"Note 15 Pro","config":"8+256","prices":{"W07":7499,"W09":7499,"W10":7999,"W11":7999,"W12":7999,"W13":7999,"W15":7499,"W16":7499,"W17":7499,"W18":6999,"W19":6999,"W20":7499,"W21":7499,"W22":7499},"latest":7499,"latestWeek":"W22"},{"segment":"Note","brand":"小米","model":"Note 14 Pro 5G","config":"8+256 (Bundle)","prices":{"W02":7999,"W03":7999,"W04":7999,"W05":7999,"W06":8999},"latest":8999,"latestWeek":"W06"},{"segment":"Note","brand":"小米","model":"Note 15 Pro 5G","config":"8+512 (Bundle)","prices":{"W12":9999,"W13":9999,"W15":9499,"W16":9499,"W17":9499,"W18":9249,"W19":9249,"W20":9499,"W21":9499,"W22":9499},"latest":9499,"latestWeek":"W22"},{"segment":"Note","brand":"小米","model":"Note 15 Pro 5G","config":"8+256 (Bundle)","prices":{"W07":9499,"W09":9499,"W10":9999,"W11":9999},"latest":9999,"latestWeek":"W11"},{"segment":"Note","brand":"小米","model":"Note 14 Pro+ 5G","config":"8+256 (Bundle)","prices":{"W02":10999,"W03":10999,"W04":10999,"W05":10999,"W06":10999},"latest":10999,"latestWeek":"W06"},{"segment":"Note","brand":"小米","model":"Note 15 Pro+ 5G","config":"8+256 (Bundle)","prices":{"W07":10999,"W09":10999,"W10":10999,"W11":10999},"latest":10999,"latestWeek":"W11"},{"segment":"Note","brand":"小米","model":"Note 15 Pro+ 5G","config":"12+512 (Bundle)","prices":{"W12":10999,"W13":10999,"W15":10999,"W16":10999,"W17":10999,"W18":10999,"W19":10999,"W20":10999,"W21":10999,"W22":10999},"latest":10999,"latestWeek":"W22"},{"segment":"Note","brand":"三星","model":"A26 5G","config":"6+128","prices":{"W02":5999,"W03":5999,"W04":4999,"W05":4999,"W06":4999,"W07":4999,"W09":4999,"W10":4799,"W11":4799,"W12":4799,"W13":4799,"W15":5999,"W16":5999,"W17":5999,"W18":4499,"W19":4499,"W20":4999,"W21":4999,"W22":4999},"latest":4999,"latestWeek":"W22"},{"segment":"Note","brand":"三星","model":"A36 5G","config":"6+128","prices":{"W02":6499,"W03":6499,"W04":6499,"W05":6499,"W06":5999,"W07":7499,"W09":7499,"W10":5999,"W11":5999,"W12":5999,"W13":5999},"latest":5999,"latestWeek":"W13"},{"segment":"Note","brand":"三星","model":"A37 5G","config":"8+256","prices":{"W13":9999,"W15":7999,"W16":6299,"W17":6299,"W18":7999,"W19":7999,"W20":7499,"W21":7499,"W22":7499},"latest":7499,"latestWeek":"W22"},{"segment":"Note","brand":"三星","model":"A56 5G","config":"8+256","prices":{"W02":9999,"W03":9999,"W04":10999,"W05":10999,"W06":8999,"W07":8999,"W09":8999,"W10":8499,"W11":8499,"W12":8499,"W13":8499},"latest":8499,"latestWeek":"W13"},{"segment":"Note","brand":"三星","model":"A57 5G","config":"8+256","prices":{"W13":11999,"W15":9999,"W16":8499,"W17":8499,"W18":9999,"W19":9999,"W20":9999,"W21":9999,"W22":9999},"latest":9999,"latestWeek":"W22"},{"segment":"Note","brand":"摩托罗拉","model":"G55 5G","config":"8+256","prices":{"W02":4199,"W03":4199,"W04":4199,"W05":4199,"W06":4199},"latest":4199,"latestWeek":"W06"},{"segment":"Note","brand":"摩托罗拉","model":"G17","config":"4+256","prices":{"W20":4499,"W21":4499,"W22":4499},"latest":4499,"latestWeek":"W22"},{"segment":"Note","brand":"摩托罗拉","model":"G56 5G","config":"8+256","prices":{"W02":5499,"W03":5499,"W04":5499,"W05":5499,"W06":5499,"W07":5499,"W09":5499,"W10":5499,"W11":5499,"W12":5499,"W13":5499,"W15":5499,"W16":5499,"W17":5499,"W18":4999,"W19":4999},"latest":4999,"latestWeek":"W19"},{"segment":"Note","brand":"摩托罗拉","model":"G77","config":"8+256","prices":{"W20":6499,"W21":6499,"W22":6499},"latest":6499,"latestWeek":"W22"},{"segment":"Note","brand":"摩托罗拉","model":"Edge 70 Fusion","config":"8+256","prices":{"W20":8999,"W21":8999,"W22":8999},"latest":8999,"latestWeek":"W22"},{"segment":"Note","brand":"摩托罗拉","model":"Edge 60","config":"12+512","prices":{"W02":8999,"W03":11999,"W04":11999,"W05":9999,"W06":9999,"W07":11999,"W09":11999,"W10":11999,"W11":8999,"W12":8999,"W13":8999,"W15":11999},"latest":11999,"latestWeek":"W15"},{"segment":"Note","brand":"摩托罗拉","model":"Edge 70","config":"12+512","prices":{"W05":12999,"W06":12999,"W07":12999,"W09":12999,"W10":12999,"W11":12999,"W12":12999,"W13":12999,"W15":12999,"W16":12999,"W17":12999,"W18":10999,"W19":10999,"W20":12999,"W21":12999,"W22":12999},"latest":12999,"latestWeek":"W22"},{"segment":"Note","brand":"荣耀","model":"X7D","config":"8+256 (Bundle)","prices":{"W02":5999,"W03":5499,"W04":5499,"W05":5999,"W06":5999,"W07":5999,"W09":5999,"W10":5999,"W11":5499,"W12":5499,"W13":5999,"W15":5999,"W16":5999,"W17":5999,"W18":4999,"W19":4999},"latest":4999,"latestWeek":"W19"},{"segment":"Note","brand":"荣耀","model":"X7D","config":"8+256","prices":{"W20":4999,"W21":5999,"W22":5999},"latest":5999,"latestWeek":"W22"},{"segment":"Note","brand":"荣耀","model":"X8C","config":"8+512 (Bundle)","prices":{"W02":6499,"W03":6499,"W04":6499,"W05":6499,"W06":6499,"W07":6499,"W09":6499,"W10":6499,"W11":6499,"W12":6499,"W13":6499,"W15":6999,"W16":6999,"W17":6999,"W18":6999,"W19":6999},"latest":6999,"latestWeek":"W19"},{"segment":"Note","brand":"荣耀","model":"X8D","config":"8+512","prices":{"W20":6999,"W21":6999,"W22":6999},"latest":6999,"latestWeek":"W22"},{"segment":"Note","brand":"荣耀","model":"Magic 7 Lite","config":"8+512 (Bundle)","prices":{"W02":8999,"W03":8999,"W04":8999,"W05":8999,"W06":8999},"latest":8999,"latestWeek":"W06"},{"segment":"Note","brand":"荣耀","model":"Magic 8 Lite","config":"8+512 (Bundle)","prices":{"W15":9999,"W16":9999,"W17":9999,"W18":9999,"W19":9999,"W20":9999,"W21":9999,"W22":9999},"latest":9999,"latestWeek":"W22"},{"segment":"Note","brand":"OPPO","model":"A5 Pro","config":"8+256","prices":{"W02":5699,"W03":5699,"W04":5699,"W05":5699,"W06":5699,"W07":5999,"W09":5999,"W10":5999,"W11":5999,"W12":5999,"W13":5999,"W15":5999,"W16":5999,"W17":5999,"W18":5699,"W19":5699},"latest":5699,"latestWeek":"W19"},{"segment":"Note","brand":"OPPO","model":"A6t","config":"4+128","prices":{"W20":5999,"W21":5999,"W22":5999},"latest":5999,"latestWeek":"W22"},{"segment":"Note","brand":"OPPO","model":"A6k","config":"8+256","prices":{"W15":7999,"W16":7499,"W17":7499,"W18":7299,"W19":7299,"W20":6999,"W21":6499,"W22":6499},"latest":6499,"latestWeek":"W22"},{"segment":"Note","brand":"OPPO","model":"A5 Pro 5G","config":"8+256","prices":{"W02":7999,"W03":7999,"W04":7999,"W05":7999,"W06":7999},"latest":7999,"latestWeek":"W06"},{"segment":"Note","brand":"OPPO","model":"Reno 13F","config":"12+256","prices":{"W02":7999,"W03":7999,"W04":7999,"W05":7999,"W06":9499},"latest":9499,"latestWeek":"W06"},{"segment":"Note","brand":"OPPO","model":"A6 Pro 5G","config":"8+256","prices":{"W07":7999,"W09":7999,"W10":7999,"W11":7999,"W12":7999,"W13":7999,"W15":7999,"W16":8999,"W17":8999,"W18":8499,"W19":8499,"W20":8999,"W21":9499,"W22":9499},"latest":9499,"latestWeek":"W22"},{"segment":"Note","brand":"OPPO","model":"Reno 14F","config":"12+256","prices":{"W02":9999,"W03":9999,"W04":9999,"W05":9999,"W06":9999,"W07":9999,"W09":9999,"W10":9999,"W11":9999,"W12":9999,"W13":9999,"W15":9999,"W16":9999,"W17":9999,"W18":9999,"W19":9999,"W20":9999,"W21":9999,"W22":9999},"latest":9999,"latestWeek":"W22"},{"segment":"高端","brand":"小米","model":"15T","config":"12+512 (Bundle)","prices":{"W02":13999,"W03":13999,"W04":13999,"W05":12459,"W06":13999,"W07":13999,"W09":13999,"W10":13999,"W11":13999,"W12":13999,"W13":13999,"W15":13999,"W16":13999,"W17":13999,"W18":13999,"W19":13999,"W20":13999,"W21":13999,"W22":13999},"latest":13999,"latestWeek":"W22"},{"segment":"高端","brand":"小米","model":"15T Pro","config":"12+512 (Bundle)","prices":{"W02":18999,"W03":18999,"W04":18999,"W05":17459,"W06":18999,"W07":18999,"W09":18999,"W10":18999,"W11":18999,"W12":18999,"W13":18999,"W15":18999,"W16":18999,"W17":18999,"W18":18999,"W19":18999,"W20":18999,"W21":18999,"W22":18999},"latest":18999,"latestWeek":"W22"},{"segment":"高端","brand":"三星","model":"S25 FE","config":"8+128","prices":{"W02":13999,"W03":13999,"W04":13999,"W05":13999,"W06":13999,"W07":13999,"W09":13999,"W10":12999,"W11":12999,"W12":12999,"W13":12999,"W15":15499,"W16":15499,"W17":15499,"W18":15499,"W19":15499,"W20":12999,"W21":12999,"W22":12999},"latest":12999,"latestWeek":"W22"},{"segment":"高端","brand":"三星","model":"S26","config":"8+256","prices":{"W07":22499,"W09":22499,"W10":22499,"W11":22499,"W12":22499,"W13":22499,"W15":22499,"W16":22499,"W17":22499,"W18":22499,"W19":22499,"W20":16999,"W21":16999,"W22":16999},"latest":16999,"latestWeek":"W22"},{"segment":"高端","brand":"三星","model":"S25","config":"8+256","prices":{"W02":17999,"W03":17999,"W04":21499,"W05":21499,"W06":17999},"latest":17999,"latestWeek":"W06"},{"segment":"高端","brand":"摩托罗拉","model":"Edge 60 Pro","config":"12+512","prices":{"W02":14999,"W03":14999,"W04":14999,"W05":12999,"W06":12999,"W07":14999,"W09":14999,"W10":11999,"W11":11999,"W12":11999,"W13":14999,"W15":14999,"W16":14999,"W17":14999,"W18":14999,"W19":14999,"W20":14999,"W21":14999,"W22":14999},"latest":14999,"latestWeek":"W22"},{"segment":"高端","brand":"荣耀","model":"400","config":"12+512 (Bundle)","prices":{"W02":12999,"W03":12999,"W04":12999,"W05":12999,"W06":12999,"W07":12999,"W09":12999,"W10":12999,"W11":12999,"W12":12999,"W13":12999,"W15":12999,"W16":12999,"W17":12999,"W18":12999,"W19":12999},"latest":12999,"latestWeek":"W19"},{"segment":"高端","brand":"荣耀","model":"600E","config":"8+512","prices":{"W20":12999,"W21":12999,"W22":12999},"latest":12999,"latestWeek":"W22"},{"segment":"高端","brand":"荣耀","model":"600","config":"12+512 (Bundle)","prices":{"W20":16999,"W21":16999,"W22":16999},"latest":16999,"latestWeek":"W22"},{"segment":"高端","brand":"荣耀","model":"400 Pro","config":"12+512 (Bundle)","prices":{"W02":19999,"W03":19999,"W04":19999,"W05":19999,"W06":19999,"W07":19999,"W09":19999,"W10":19999,"W11":19999,"W12":19999,"W13":19999,"W15":16999,"W16":16999,"W17":16999,"W18":19999,"W19":19999,"W20":19999,"W21":19999,"W22":19999},"latest":19999,"latestWeek":"W22"},{"segment":"高端","brand":"OPPO","model":"Reno 14","config":"12+512 (Bundle)","prices":{"W02":14499,"W03":14999,"W04":14999,"W05":14999,"W06":14999,"W07":14999,"W09":14999,"W10":14999,"W11":14999,"W12":14999,"W13":14999,"W15":14999,"W16":14999,"W17":14999,"W18":14999,"W19":14999,"W20":14999,"W21":14999,"W22":14999},"latest":14999,"latestWeek":"W22"}],"weeks":["W02","W03","W04","W05","W06","W07","W09","W10","W11","W12","W13","W15","W16","W17","W18","W19","W20","W21","W22"]};
+const RD={"segments":[{"name":"Entry","key":"entry","rows":[{"xiaomi":[{"model":"A5","config":"3+64","w22":1999,"w21":1999,"msrp":1999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/xiaomi-redmi-a5-titanio-64gb/71001948"},{"model":"A5","config":"4+128","w22":2399,"w21":2399,"msrp":2399,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/xiaomi-redmi-a5-dorado-128gb/71002188"}],"samsung":[{"model":"A07","config":"4+64","w22":1499,"w21":1499,"msrp":2499,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/samsung-galaxy-a07-verde-64gb/71003319"},{"model":"A07","config":"4+128","w22":2999,"w21":2999,"msrp":2999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/samsung-galaxy-a07-verde-128gb/71004249"}],"honor":[{"model":"X5C","config":"4+128","w22":1999,"w21":1999,"msrp":1999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/honor-x5c-cian-128gb/71002970"}],"moto":[{"model":"G06","config":"4+64","w22":1999,"w21":1999,"msrp":2499,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/motorola-moto-g06-azul-64gb/71002973"},{"model":"G06","config":"4+128","w22":2499,"w21":2499,"msrp":2999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/motorola-moto-g06-cafe-128gb/71002999"},{"model":"G06","config":"4+256","w22":2999,"w21":2999,"msrp":3499,"link":"https://www.coppel.com/pdp/celular-motorola-g06-liberado-256-gb-azul-pm-2192943"}],"oppo":[{"model":"A5","config":"4+256","w22":4499,"w21":4499,"msrp":4499,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/oppo-a5-verde-256gb/71002262?utm_source=gg&utm_medium=pmax&utm_campaign=52026_gg_hotsale26_vnt_prep_ak_pmax&utm_content=gg__na___tai_pmax&campaignid=23869906286&network=x&device=c&gad_source=1"}]},{"xiaomi":[{"model":"A7 ","config":"3+64","w22":null,"w21":null,"msrp":null,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/xiaomi-redmi-a7-verde-64gb/71004493"}],"samsung":[{"model":"A17 4G","config":"4+128","w22":2599,"w21":2599,"msrp":4499,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/samsung-galaxy-a17-negro-128gb/71003003"}],"honor":[{"model":"X5C Plus","config":"4+256","w22":2999,"w21":2999,"msrp":2999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/honor-x5c-plus-cian-256gb/71002976"}],"moto":[{"model":"G17","config":"4+256","w22":4499,"w21":4499,"msrp":5499,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/motorola-moto-g17-arandano-256gb/71003960"}],"oppo":[{"model":"A6X","config":"4+128","w22":3699,"w21":3699,"msrp":3699,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/oppo-a6x-azul-128gb/71003450"}]},{"xiaomi":[{"model":"A7 Pro","config":"4+128","w22":3299,"w21":3299,"msrp":3299,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/xiaomi-redmi-a7-pro-negro-128gb/71004213"}],"samsung":[{"model":"A17 5G","config":"4+128","w22":4599,"w21":4599,"msrp":4599,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/samsung-galaxy-a17-5g-gris-128gb/71002570?utm_source=gg&utm_medium=shpping&utm_campaign=12026_gg_tl26_vnt_prep_tl_shpping&utm_content=______&campaignid=23374940084&network=g&device=c&gad_source=1"}],"honor":[{"model":"X6C","config":"4+256","w22":3999,"w21":3999,"msrp":3999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/honor-x6c-cian-256gb/71002231"}],"moto":[],"oppo":[{"model":"A6t","config":"4+128","w22":5999,"w21":5999,"msrp":6999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/oppo-a6t-oliva-128gb/71004151"}]},{"xiaomi":[{"model":"15C","config":"4+128","w22":2799,"w21":2799,"msrp":2999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/xiaomi-redmi-15c-negro-128gb/71002389"},{"model":"15C","config":"4+256","w22":3099,"w21":3099,"msrp":3499,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/xiaomi-redmi-15c-256-4gb-verde-256gb/71002394"}],"samsung":[],"honor":[],"moto":[],"oppo":[]},{"xiaomi":[{"model":"Redmi 15","config":"8+256","w22":4499,"w21":4499,"msrp":4499,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/xiaomi-redmi-15-negro-256gb/71002440"}],"samsung":[],"honor":[],"moto":[],"oppo":[]}]},{"name":"Note","key":"note","rows":[{"xiaomi":[{"model":"Note 15","config":"8+256","w22":5499,"w21":5499,"msrp":5999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/xiaomi-redmi-note-15-azul-256gb/71003606"}],"samsung":[{"model":"A26 5G","config":"6+128","w22":4999,"w21":4999,"msrp":5999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/samsung-galaxy-a26-verde-128gb/71002549?utm_source=gg&utm_medium=shpping&utm_campaign=12026_gg_tl26_vnt_prep_tl_shpping&utm_content=______&campaignid=23374940084&network=g&device=c&gad_source=1"}],"honor":[{"model":"X7D","config":"8+256","w22":5999,"w21":5999,"msrp":null,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/honor-x7d-dorado-256gb/71002967"}],"moto":[{"model":"G55 5G","config":"8+256","w22":4199,"w21":4199,"msrp":4999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/motorola-moto-g55-5g-verde-256gb/71000424"}],"oppo":[{"model":"A6k","config":"8+256","w22":6499,"w21":6499,"msrp":7499,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/oppo-%25C2%25A0-a6k-azul-256gb/71004043"}]},{"xiaomi":[{"model":"Note 15 Pro","config":"8+256","w22":7499,"w21":7499,"msrp":7499,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/xiaomi-redmi-note-15-pro-negro-256gb/71003600"}],"samsung":[{"model":"A37 5G","config":"8+256","w22":7499,"w21":7499,"msrp":9999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/samsung-galaxy-a37-gris-256gb/71004072"}],"honor":[{"model":"X8D","config":"8+512","w22":6999,"w21":6999,"msrp":6999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/honor-x8d-gris-256gb/71004093"}],"moto":[{"model":"G77","config":"8+256","w22":6499,"w21":6499,"msrp":7999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/motorola-moto-g77-cafe-256gb/71004024"}],"oppo":[{"model":"A6 Pro 5G","config":"8+256","w22":9499,"w21":9499,"msrp":9499,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/oppo-a6-pro-5g-azul-256gb/71003447?utm_source=gg&utm_medium=shpping&utm_campaign=12026_gg_tl26_vnt_prep_tl_shpping&utm_content=______&campaignid=23374940084&network=g&device=c&gad_source=1"}]},{"xiaomi":[{"model":"Note 15 Pro 5G","config":"8+512 (Bundle)","w22":9499,"w21":9499,"msrp":9999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/xiaomi-redmi-note-15-pro-5g-negro-512gb/71003597"}],"samsung":[{"model":"A57 5G","config":"8+256","w22":9999,"w21":9999,"msrp":11999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/samsung-galaxy-a57-gris-256gb/71004206?utm_source=gg&utm_medium=pmax&utm_campaign=12026_gg_tl26_vnt_prep_tl_pmax&utm_content=______&campaignid=23374984073&network=x&device=c&gad_source=1"}],"honor":[{"model":"400 Lite","config":"8+512","w22":null,"w21":null,"msrp":null,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/honor-400-lite-gris-256gb/71002471"}],"moto":[{"model":"Edge 70 Fusion","config":"8+256","w22":8999,"w21":8999,"msrp":10999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/motorola-edge-70-fusion-azul-256gb/71004030"}],"oppo":[{"model":"Reno 14F","config":"12+256","w22":9999,"w21":9999,"msrp":9999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/oppo-reno14-f-verde-256gb/71002366"}]},{"xiaomi":[{"model":"Note 15 Pro+ 5G","config":"12+512 (Bundle)","w22":10999,"w21":10999,"msrp":11999,"link":"https://www.mi.com/mx/product/redmi-note-15-pro-plus-5g/buy/"}],"samsung":[],"honor":[{"model":"Magic 8 Lite","config":"8+512 (Bundle)","w22":9999,"w21":9999,"msrp":9999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/honor-magic8-lite-dorado-512gb/71003671"}],"moto":[{"model":"Edge 70","config":"12+512","w22":12999,"w21":12999,"msrp":12999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/motorola-edge-70-olivo-512gb/71003734"}],"oppo":[]}]},{"name":"High","key":"high","rows":[{"xiaomi":[{"model":"15T","config":"12+512 (Bundle)","w22":13999,"w21":13999,"msrp":13999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/xiaomi-15t-negro-512gb/71002478"}],"samsung":[{"model":"S25 FE","config":"8+128","w22":12999,"w21":12999,"msrp":15499,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/samsung-%C2%A0galaxy-s25-fe-azul-marino-128gb/71003028?utm_source=gg&utm_medium=shpping&utm_campaign=12026_gg_tl26_vnt_prep_tl_shpping&utm_content=______&campaignid=23374940084&network=g&device=c&gad_source=1"}],"honor":[{"model":"600","config":"12+512 (Bundle)","w22":null,"w21":16999,"msrp":16999,"link":""}],"moto":[{"model":"Edge 60 Pro","config":"12+512","w22":14999,"w21":14999,"msrp":14999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/motorola-moto-edge-60-pro-gris-512gb/71002124"}],"oppo":[{"model":"Reno 14","config":"12+512 (Bundle)","w22":14999,"w21":14999,"msrp":14999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/oppo-reno14-blanco-512gb/71002282"}]},{"xiaomi":[{"model":"15T Pro","config":"12+512 (Bundle)","w22":18999,"w21":18999,"msrp":18999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/xiaomi-15t-pro-gris-512gb/71002473"}],"samsung":[{"model":"S26","config":"8+256","w22":16999,"w21":16999,"msrp":22499,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/samsung-galaxy-s26-azul-256gb/71003777"}],"honor":[{"model":"400 Pro","config":"12+512 (Bundle)","w22":19999,"w21":19999,"msrp":19999,"link":"https://www.telcel.com/tienda/producto/telefonos-y-smartphones/honor-400-pro-gris-512gb/71002237"}],"moto":[],"oppo":[]}]}]};
+
+// ── Language toggle ───────────────────────────────────────────────────────────
+let currentLang = 'en';
+const T = {
+  en: { wow: 'WoW', msrp: 'MSRP', modelMem: 'MODEL / MEMORY' },
+  zh: { wow: '周环比', msrp: '建议价', modelMem: '型号 / 内存' }
+};
+function toggleLang() {
+  currentLang = currentLang === 'en' ? 'zh' : 'en';
+  // Update all data-en/data-zh elements
+  document.querySelectorAll('[data-en]').forEach(el => {
+    el.innerHTML = el.dataset[currentLang] || el.dataset.en;
+  });
+  // Switch readme panels
+  document.querySelectorAll('.readme-lang-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('readme-' + currentLang).classList.add('active');
+  // Update button label
+  document.getElementById('langBtn').textContent = currentLang === 'zh' ? '\u{1F310} EN' : '\u{1F310} 中文';
+  // Re-render table (badges use T)
+  renderRecentTable();
+  // Re-render chart (SVG label uses T)
+  if (document.querySelector('#pane-historical.active')) render();
+}
+
+// ── ISO week date range ───────────────────────────────────────────────────────
+function isoWeekDateRange(weekLabel) {
+  const m = weekLabel.match(/W(\d+)/);
+  if (!m) return '';
+  const week = parseInt(m[1]);
+  const year = new Date().getFullYear();
+  const jan4 = new Date(year, 0, 4);
+  const jan4Day = jan4.getDay() || 7;
+  const mon = new Date(jan4);
+  mon.setDate(jan4.getDate() - (jan4Day - 1) + (week - 1) * 7);
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  const fmt = d => d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+  return `${fmt(mon)} – ${fmt(sun)}, ${year}`;
+}
+(function(){
+  const lbl = document.getElementById('recentWeekLabel').textContent.trim();
+  document.getElementById('snapDateRange').textContent = isoWeekDateRange(lbl);
+})();
+
+// ── Recent tab ────────────────────────────────────────────────────────────────
+const BRAND_KEYS = ['xiaomi','samsung','honor','moto','oppo'];
+const BRAND_COLORS = {xiaomi:'#ff8f40',samsung:'#59c2ff',honor:'#f07178',moto:'#39bae6',oppo:'#8cc265'};
+let activeRSeg = 'all';
+
+function badge(cur, ref, label) {
+  if (cur == null || ref == null) return '';
+  const d = cur - ref;
+  if (d === 0) return `<span class="mom-badge mom-flat">&mdash; ${label}</span>`;
+  if (d < 0)  return `<span class="mom-badge mom-pos">&#8595; ${Math.abs(d).toLocaleString()} ${label}</span>`;
+  return       `<span class="mom-badge mom-neg">&#8593; ${Math.abs(d).toLocaleString()} ${label}</span>`;
+}
+
+function renderCell(skus, brandKey, isCheap) {
+  if (!skus || !skus.length) return '<td class="matrix-cell matrix-empty">&mdash;</td>';
+  const cls = `matrix-cell${brandKey==='xiaomi'?' matrix-poco':''}${isCheap?' matrix-cheap':''}`;
+  let inner = '';
+  skus.forEach((s, i) => {
+    const lnk = s.link ? `<a class="link-icon" href="${s.link}" target="_blank">&#128279;</a>` : '';
+    const pc = isCheap ? ' matrix-price-cheap' : '';
+    const msrpB = badge(s.w22, s.msrp, T[currentLang].msrp);
+    const wowB  = badge(s.w22, s.w21, T[currentLang].wow);
+    if (i > 0) inner += '<div class="sku-sep"></div>';
+    inner += `<div class="sku-row">
+  <div class="sku-left"><span class="matrix-model">${s.model}</span><span class="sku-cfg">${s.config}</span>${lnk}</div>
+  <div class="sku-right">${msrpB}${wowB}</div>
+</div><div class="matrix-price${pc}">$${s.w22?.toLocaleString()||'&mdash;'}</div>`;
+  });
+  return `<td class="${cls}">${inner}</td>`;
+}
+
+function renderRecentTable() {
+  const segs = activeRSeg === 'all' ? RD.segments : RD.segments.filter(s => s.key === activeRSeg);
+  // Use multiple tbodies for clean segment separation
+  const tbodyEl = document.getElementById('recentTbody');
+  // Replace single tbody with multiple
+  const table = document.getElementById('recentTable');
+  // Remove all tbodies except thead
+  table.querySelectorAll('tbody').forEach(b => b.remove());
+
+  segs.forEach(seg => {
+    const tb = document.createElement('tbody');
+    tb.className = 'seg-block';
+    tb.dataset.seg = seg.key;
+    seg.rows.forEach((row, ri) => {
+      const xiPrices = (row.xiaomi || []).filter(s => s.w22).map(s => s.w22);
+      const xiMin = xiPrices.length ? Math.min(...xiPrices) : null;
+      const tr = document.createElement('tr');
+      if (ri === 0) {
+        tr.innerHTML = `<td class="matrix-band-label" rowspan="${seg.rows.length}">${seg.name}</td>`;
+      }
+      BRAND_KEYS.forEach(bk => {
+        const skus = row[bk] || [];
+        const cp = skus.filter(s => s.w22).map(s => s.w22);
+        const cpMin = cp.length ? Math.min(...cp) : null;
+        const cheap = bk !== 'xiaomi' && xiMin != null && cpMin != null && cpMin < xiMin;
+        tr.insertAdjacentHTML('beforeend', renderCell(skus, bk, cheap));
+      });
+      tb.appendChild(tr);
     });
-    if(!wasOpen){
-      state[cat.key]=true;
-      catEl.classList.add('open');
-      panelEl.classList.add('open');
-      connEl.classList.add('open');
+    table.appendChild(tb);
+  });
+}
+
+// Segment filter for recent tab
+document.getElementById('recentSegChips').addEventListener('click', e => {
+  const btn = e.target.closest('[data-rseg]');
+  if (!btn) return;
+  document.querySelectorAll('[data-rseg]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeRSeg = btn.dataset.rseg;
+  renderRecentTable();
+});
+
+// ── Export ────────────────────────────────────────────────────────────────────
+const BRAND_NAMES  = {xiaomi:'Xiaomi', samsung:'Samsung', honor:'Honor', moto:'Motorola', oppo:'OPPO'};
+const BRAND_HEX    = {xiaomi:'FF8F40', samsung:'59C2FF', honor:'F07178', moto:'39BAE6', oppo:'8CC265'};
+const BRAND_BG     = {xiaomi:'1A1200', samsung:'001A2E', honor:'1F0608', moto:'001820', oppo:'0A1800'};
+
+function exportSnapshot() {
+  if (typeof XLSX === 'undefined') { alert('SheetJS not loaded'); return; }
+  const wb = XLSX.utils.book_new();
+  const label = document.getElementById('recentWeekLabel').textContent.trim();
+
+  // Build AOA: one row per price-tier row (no split model/price rows)
+  // Header row
+  const header = ['Segment', ...BRAND_KEYS.map(bk => BRAND_NAMES[bk])];
+  const aoa = [header];
+
+  RD.segments.forEach(seg => {
+    seg.rows.forEach((row, ri) => {
+      const dataRow = [ri === 0 ? seg.name : ''];
+      BRAND_KEYS.forEach(bk => {
+        const skus = row[bk] || [];
+        if (!skus.length) { dataRow.push('—'); return; }
+        // Group by model, join configs with " / "
+        const byModel = {};
+        skus.forEach(s => {
+          if (!byModel[s.model]) byModel[s.model] = [];
+          byModel[s.model].push(s);
+        });
+        const parts = Object.entries(byModel).map(([model, ss]) => {
+          const configs = ss.map(s => s.config).join(' / ');
+          const prices  = ss.map(s => s.w22 ? `$${s.w22.toLocaleString()}` : '—').join(' / ');
+          return `${model}  ${configs}\n${prices}`;
+        });
+        dataRow.push(parts.join('\n'));
+      });
+      aoa.push(dataRow);
+    });
+    // blank separator row between segments
+    aoa.push(['', '', '', '', '', '']);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // Column widths
+  ws['!cols'] = [{wch:11},{wch:30},{wch:30},{wch:30},{wch:30},{wch:30}];
+
+  // Row heights
+  ws['!rows'] = aoa.map((r, i) => ({hpt: i === 0 ? 22 : 48}));
+
+  // Cell styles — header row
+  const hdrFill = {fgColor:{rgb:'0D1017'}, patternType:'solid'};
+  const hdrFont = {bold:true, sz:10};
+  // Column 0 header
+  const c0 = XLSX.utils.encode_cell({r:0,c:0});
+  ws[c0] = ws[c0] || {v:'Segment',t:'s'};
+  ws[c0].s = {font:{bold:true,sz:10,color:{rgb:'8A9199'}}, fill:hdrFill, alignment:{horizontal:'center',vertical:'center'}};
+
+  BRAND_KEYS.forEach((bk, ci) => {
+    const addr = XLSX.utils.encode_cell({r:0, c:ci+1});
+    ws[addr] = ws[addr] || {v: BRAND_NAMES[bk], t:'s'};
+    ws[addr].s = {
+      font: {bold:true, sz:11, color:{rgb: BRAND_HEX[bk]}},
+      fill: {fgColor:{rgb: BRAND_BG[bk]}, patternType:'solid'},
+      alignment: {horizontal:'center', vertical:'center'}
+    };
+  });
+
+  // Data cell styles — wrap text, vertical top
+  for (let r = 1; r < aoa.length; r++) {
+    for (let c = 0; c < 6; c++) {
+      const addr = XLSX.utils.encode_cell({r, c});
+      if (!ws[addr]) continue;
+      ws[addr].s = {
+        alignment: {wrapText:true, vertical:'top', horizontal: c===0 ? 'center' : 'left'},
+        font: {sz:10}
+      };
     }
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, label);
+  XLSX.writeFile(wb, `competitive_snapshot_${label}.xlsx`, {cellStyles:true});
+}
+
+// ── Historical chart ──────────────────────────────────────────────────────────
+const ALL_WEEKS=D.weeks;
+const BRAND_COLOR={'小米':'#ff8f40','三星':'#59c2ff','摩托罗拉':'#39bae6','荣耀':'#f07178','OPPO':'#8cc265'};
+const BRAND_EN={'小米':'Xiaomi','三星':'Samsung','摩托罗拉':'Motorola','荣耀':'Honor','OPPO':'OPPO'};
+const SVG_NS='http://www.w3.org/2000/svg';
+const LABEL_W=216,ROW_H=38,PAD_Y=6,AXIS_H=32,PAD_X=16;
+let activeSeg='all',activeBrand='all';
+let weekFrom=ALL_WEEKS[0],weekTo=ALL_WEEKS[ALL_WEEKS.length-1];
+function weekNum(w){return parseInt(w.slice(1));}
+function hasGap(w1,w2){return weekNum(w2)-weekNum(w1)>1;}
+function isLight(){return document.body.classList.contains('light');}
+function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+function svgEl(tag,attrs){const el=document.createElementNS(SVG_NS,tag);for(const[k,v]of Object.entries(attrs))el.setAttribute(k,v);return el;}
+function getVisibleWeeks(){return ALL_WEEKS.filter(w=>weekNum(w)>=weekNum(weekFrom)&&weekNum(w)<=weekNum(weekTo));}
+function getFilteredSkus(){
+  const weeks=getVisibleWeeks();
+  const filtered=D.skus.filter(s=>(activeSeg==='all'||s.segment===activeSeg)&&(activeBrand==='all'||s.brand===activeBrand)&&weeks.some(w=>s.prices[w]!=null));
+  const lat=s=>{for(let i=weeks.length-1;i>=0;i--){if(s.prices[weeks[i]]!=null)return s.prices[weeks[i]];}return 0;};
+  filtered.sort((a,b)=>lat(b)-lat(a));
+  return filtered;
+}
+function render(){
+  const skus=getFilteredSkus();const weeks=getVisibleWeeks();const n=weeks.length;
+  if(!n)return;
+  const outer=document.getElementById('swimOuter');const bodyEl=document.getElementById('swimBody');const axisEl=document.getElementById('swimAxisRow');
+  const cW=outer.clientWidth||900;const chartW=cW-LABEL_W-PAD_X*2;
+  const xStep=n>1?chartW/(n-1):chartW/2;const xOf=i=>LABEL_W+PAD_X+i*xStep;
+  const totalH=skus.length*ROW_H;
+  const light=isLight();
+  const textCol=light?'#525b70':'#8a9199';const mutedCol=light?'#8896a8':'#626a73';
+  const gridCol=light?'rgba(0,0,0,.05)':'rgba(255,255,255,.04)';const altCol=light?'rgba(0,0,0,.02)':'rgba(255,255,255,.018)';const s0Col=light?'#fcfcfc':'#0d1017';
+  const axisSvg=svgEl('svg',{width:'100%',height:AXIS_H,style:'display:block;overflow:visible'});
+  const hY=AXIS_H/2+4;
+  const hdr=svgEl('text',{x:22,y:hY,'font-family':"'DM Mono',monospace",'font-size':'8.5','font-weight':'600',fill:mutedCol});hdr.textContent=T[currentLang].modelMem;axisSvg.appendChild(hdr);
+  const mhdr=svgEl('text',{x:LABEL_W-8,y:hY,'font-family':"'DM Mono',monospace",'font-size':'8.5','font-weight':'600','text-anchor':'end',fill:mutedCol});mhdr.textContent='MSRP';axisSvg.appendChild(mhdr);
+  axisSvg.appendChild(svgEl('line',{x1:LABEL_W,y1:0,x2:LABEL_W,y2:AXIS_H+totalH,stroke:light?'rgba(0,0,0,.07)':'rgba(255,255,255,.06)','stroke-width':'1'}));
+  weeks.forEach((w,i)=>{const x=xOf(i);axisSvg.appendChild(svgEl('line',{x1:x,y1:0,x2:x,y2:6,stroke:mutedCol,'stroke-width':'1'}));const t=svgEl('text',{x,y:22,'text-anchor':'middle','font-family':"'DM Mono',monospace",'font-size':'9',fill:mutedCol});t.textContent=w;axisSvg.appendChild(t);axisSvg.appendChild(svgEl('line',{x1:x,y1:AXIS_H,x2:x,y2:AXIS_H+totalH,stroke:gridCol,'stroke-width':'1'}));});
+  axisEl.innerHTML='';axisEl.appendChild(axisSvg);
+  const bodySvg=svgEl('svg',{width:'100%',height:totalH,style:'display:block;overflow:visible'});
+  skus.forEach((s,si)=>{
+    const y0=si*ROW_H;const yMid=y0+ROW_H/2;
+    const prices=weeks.map(w=>s.prices[w]??null);
+    const valid=prices.filter(p=>p!==null);
+    if(!valid.length)return;
+    const pMin=Math.min(...valid),pMax=Math.max(...valid);
+    const pRange=pMax-pMin||1;
+    const yOf=p=>yMid+PAD_Y-(p-pMin)/pRange*(ROW_H-PAD_Y*2);
+    if(si%2===0)bodySvg.appendChild(svgEl('rect',{x:0,y:y0,width:'100%',height:ROW_H,fill:altCol}));
+    const col=BRAND_COLOR[s.brand]||textCol;
+    const lbl=svgEl('text',{x:10,y:yMid+3,'font-family':"'DM Sans',sans-serif",'font-size':'9.5','font-weight':'600',fill:col});
+    lbl.textContent=`${BRAND_EN[s.brand]||s.brand} ${s.model}`;bodySvg.appendChild(lbl);
+    const cfg=svgEl('text',{x:10,y:yMid+14,'font-family':"'DM Mono',monospace",'font-size':'8',fill:mutedCol});
+    cfg.textContent=s.config;bodySvg.appendChild(cfg);
+    if(s.latest){
+      const latLbl=svgEl('text',{x:LABEL_W-6,y:yMid+4,'text-anchor':'end','font-family':"'DM Mono',monospace",'font-size':'9','font-weight':'600',fill:col});
+      latLbl.textContent=`$${s.latest.toLocaleString()}`;bodySvg.appendChild(latLbl);
+    }
+    let pts=[];
+    weeks.forEach((w,i)=>{if(s.prices[w]!=null)pts.push({x:xOf(i),y:yOf(s.prices[w]),w,p:s.prices[w]});});
+    for(let i=1;i<pts.length;i++){
+      const dash=hasGap(pts[i-1].w,pts[i].w)?'4 3':'';
+      bodySvg.appendChild(svgEl('line',{x1:pts[i-1].x,y1:pts[i-1].y,x2:pts[i].x,y2:pts[i].y,stroke:col,'stroke-width':'1.5','stroke-dasharray':dash,'stroke-linecap':'round'}));
+    }
+    pts.forEach(pt=>{
+      const dot=svgEl('circle',{cx:pt.x,cy:pt.y,r:'3.5',fill:col,stroke:s0Col,'stroke-width':'1.5',style:'cursor:pointer'});
+      dot.addEventListener('mouseenter',e=>{
+        const tt=document.getElementById('tooltip');
+        tt.innerHTML=`<div class="tt-week">${pt.w}</div><div class="tt-row"><span class="tt-dot" style="background:${col}"></span><span class="tt-label">${BRAND_EN[s.brand]||s.brand} ${s.model} ${s.config}</span><span class="tt-price">$${pt.p.toLocaleString()}</span></div>`;
+        tt.classList.add('show');
+      });
+      dot.addEventListener('mousemove',e=>{
+        const tt=document.getElementById('tooltip');
+        tt.style.left=(e.clientX+12)+'px';tt.style.top=(e.clientY-28)+'px';
+      });
+      dot.addEventListener('mouseleave',()=>{document.getElementById('tooltip').classList.remove('show');});
+      bodySvg.appendChild(dot);
+    });
+  });
+  bodyEl.innerHTML='';bodyEl.appendChild(bodySvg);
+}
+
+function populateWeekSelects(){
+  const s1=document.getElementById('weekFrom'),s2=document.getElementById('weekTo');
+  s1.innerHTML=s2.innerHTML='';
+  ALL_WEEKS.forEach(w=>{
+    s1.appendChild(Object.assign(document.createElement('option'),{value:w,textContent:w}));
+    s2.appendChild(Object.assign(document.createElement('option'),{value:w,textContent:w}));
+  });
+  s1.value=weekFrom;s2.value=weekTo;
+}
+
+// Historical chart filters
+document.querySelectorAll('[data-seg]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('[data-seg]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');activeSeg=btn.dataset.seg;render();
+  });
+});
+document.querySelectorAll('[data-brand]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('[data-brand]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');activeBrand=btn.dataset.brand;render();
+  });
+});
+document.getElementById('weekFrom').addEventListener('change',e=>{weekFrom=e.target.value;render();});
+document.getElementById('weekTo').addEventListener('change',e=>{weekTo=e.target.value;render();});
+
+// Tab switching
+document.querySelectorAll('[data-tab]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('[data-tab]').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('pane-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab==='historical')render();
   });
 });
 
-/* ── DEPT CARD HOVER → TOOLTIP ────────────────────────── */
-const tipEl  = document.getElementById('tooltip');
-const tipHead= document.getElementById('tip-head');
-const tipBody= document.getElementById('tip-body');
-
-document.getElementById('chart').addEventListener('mouseover', e=>{
-  const card=e.target.closest('.dept-card');
-  if(!card) return;
-  const d=DEPTS[card.dataset.key], c=CO[d.c];
-  const sub=d.n!==null?`${d.en} · ${d.n} people`:d.en;
-  tipHead.style.cssText=`background:${c.bg};border-bottom-color:${c.bd}25;`;
-  tipHead.innerHTML=`<div class="tip-cn" style="color:${c.bd};">${d.cn}</div><div class="tip-en" style="color:${c.bd};">${sub}</div>`;
-  tipEl.style.borderColor=c.bd+'40';
-  tipBody.innerHTML=d.resp.map(r=>`
-    <div class="tip-row">
-      <span class="tip-bull" style="color:${c.bd};">›</span>
-      <span class="tip-text">${r}</span>
-    </div>`).join('');
-  tipEl.classList.add('vis');
+// Theme toggle
+document.getElementById('themeBtn').addEventListener('click',()=>{
+  document.body.classList.toggle('light');
+  document.getElementById('themeBtn').textContent=document.body.classList.contains('light')?'\u{1F319} Dark':'☀️ Light';
+  if(document.querySelector('#pane-historical.active'))render();
 });
 
-document.getElementById('chart').addEventListener('mouseout', e=>{
-  if(!e.target.closest('.dept-card')) return;
-  if(e.relatedTarget?.closest?.('.dept-card')) return;
-  tipEl.classList.remove('vis');
-});
-
-document.addEventListener('mousemove', e=>{
-  if(!tipEl.classList.contains('vis')) return;
-  const tw=tipEl.offsetWidth, th=tipEl.offsetHeight, g=16;
-  let l=e.clientX+g, t=e.clientY-th/2;
-  if(l+tw>window.innerWidth-8) l=e.clientX-tw-g;
-  if(t<8) t=8;
-  if(t+th>window.innerHeight-8) t=window.innerHeight-th-8;
-  tipEl.style.left=l+'px'; tipEl.style.top=t+'px';
-});
-
-/* ── DRAG TO SCROLL ───────────────────────────────────── */
-const outer=document.getElementById('scrollOuter');
-let drag=false,sx=0,sl=0;
-outer.addEventListener('mousedown',e=>{drag=true;sx=e.pageX-outer.offsetLeft;sl=outer.scrollLeft;});
-window.addEventListener('mouseup',  ()=>drag=false);
-window.addEventListener('mousemove',e=>{
-  if(!drag) return;
-  e.preventDefault();
-  outer.scrollLeft=sl-(e.pageX-outer.offsetLeft-sx);
-});
+let rTimer;window.addEventListener('resize',()=>{clearTimeout(rTimer);rTimer=setTimeout(render,120);});
+populateWeekSelects();
+renderRecentTable();
 </script>
 </body>
 </html>
